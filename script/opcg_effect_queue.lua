@@ -191,6 +191,7 @@ function Q.enqueue(card, effect, resolver, context, options)
 		optional=optional,
 		description=options.description or 0,
 		raised=false,
+		defer_cost=options.defer_cost == true,
 	}
 	Q._items[#Q._items + 1] = item
 	sync_queue_display()
@@ -331,11 +332,37 @@ function Q.flush()
 	-- 8-6-1-1: 같은 (세대, 플레이어) 버킷에 서로 다른 카드가 2장 이상 대기
 	-- 중이면 어떤 것을 먼저 체인에 올릴지 그 플레이어가 고른다 - 발동(raise)
 	-- 직전 선택. 한 카드의 복수 효과는 삽입순(기재순) 폴백.
-	local bucket = {}
+	-- [2026-10-13 PRB02-004 / OP07-019 보니] 선택지는 지금 발동 가능한 것만:
+	-- 코스트를 아직 못 내는 효과(두웅 레스트 코스트 등)는 대기에 남겨 두었다가
+	-- 다른 효과 처리 후(두웅 액티브) 다시 고를 수 있게 한다. 버킷 전체가 발동
+	-- 불가면 그 창에서 발동 기회가 끝난 것이므로 소각하고 다음 버킷으로 간다.
+	local bucket, blocked = {}, {}
 	for _, item in ipairs(Q._items) do
 		if item.generation == generation and item.player == player and not item.raised then
-			bucket[#bucket + 1] = item
+			-- 유예 아이템만 거른다: 일반 아이템의 조건은 처리 직후 판정(OP07-038
+			-- 재정)이라 여기서 미리 떨어뜨리면 안 된다 - 리졸버가 판정한다.
+			local ready = true
+			if item.defer_cost then
+				item.context.player = item.player
+				item.context.timing = item.context.timing or item.timing
+				ready = opcg.runtime.can_resolve(item.card, item.effect.effect_id, item.context)
+			end
+			if ready then
+				bucket[#bucket + 1] = item
+			else
+				blocked[#blocked + 1] = item
+			end
 		end
+	end
+	if #bucket == 0 then
+		for _, item in ipairs(blocked) do
+			local index = find_index(item.serial, item.resolver)
+			if index then table.remove(Q._items, index) end
+		end
+		Q._flushing = false
+		if #blocked == 0 then return false end
+		sync_queue_display()
+		return Q.flush()
 	end
 	local selected = choose_next_item(player, bucket)
 	if selected then
@@ -630,8 +657,12 @@ function Q.register_trigger(card, effect, code, options)
 			context = options.context(e, tp, eg, ep, ev, re, r, rp, context) or context
 		end
 		if options.timing ~= nil then context.timing = options.timing end
-		local ok = opcg.runtime.can_resolve(handler, effect.effect_id, context)
-		if not ok then return end
+		local ok, reason = opcg.runtime.can_resolve(handler, effect.effect_id, context)
+		-- [2026-10-13 PRB02-004 / OP07-019 보니] 코스트 지불 가능 여부는 발동
+		-- 시점 판정이다: 같은 창의 선행 효과(두웅 액티브)가 코스트를 마련할 수
+		-- 있으므로 defer_cost 타이밍은 지금 못 내도 대기열에 올린다. 발동 직전
+		-- flush의 ready 판정·리졸버 can_resolve가 다시 거른다.
+		if not ok and not (options.defer_cost and reason == "COST_UNPAYABLE") then return end
 		-- [문법 게이트 — 극성 교정] 체인 진행 중(비배틀·비드레인) 파생은
 		-- 엔진이 정답이다: enqueue만 해두면 flush가 체인 중엔 대기하고
 		-- (flush 첫 줄), CHAIN_END의 after_chain이 재발신 → 무-DELAY
@@ -649,11 +680,21 @@ function Q.register_trigger(card, effect, code, options)
 			})
 			return
 		end
-		Q.enqueue(handler, effect, resolver, context, {
-			optional=options.optional,
-			description=description,
-			timing=options.timing,
-		})
+		-- 형제 수집: 콜렉터는 하나씩 돌며 매번 flush하므로, 먼저 돈 카드가
+		-- 혼자 발동돼 순서 선택(8-6-1)이 사라진다. 같은 타이밍의 형제 카드를
+		-- 첫 콜렉터에서 한꺼번에 올리고(뒤 콜렉터는 중복으로 빠진다) 고르게 한다.
+		if options.siblings and options.timing ~= nil then
+			Q.enqueue_siblings(options.siblings(e, tp, eg, ep, ev, re, r, rp),
+				options.timing, context, { defer_cost=options.defer_cost })
+		end
+		if not Q.is_pending(handler, effect, options.timing) then
+			Q.enqueue(handler, effect, resolver, context, {
+				optional=options.optional,
+				description=description,
+				timing=options.timing,
+				defer_cost=options.defer_cost,
+			})
+		end
 		Q.flush()
 	end)
 	card:RegisterEffect(collector)
@@ -743,6 +784,52 @@ local function enqueue_scope_allows(effect, card, timing, context)
 		end
 	end
 	return true
+end
+
+function Q.is_pending(card, effect, timing)
+	local key = resolver_key(effect)
+	for _, list in ipairs({Q._items, Q._direct_items}) do
+		for _, item in ipairs(list) do
+			if item.card == card and resolver_key(item.effect) == key
+				and (timing == nil or (item.context and item.context.timing) == timing
+					or item.timing == timing) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- 같은 사건으로 같은 타이밍이 충족된 형제 카드들을 엔진 큐에 한꺼번에 올린다.
+-- 각 카드의 리졸버가 그 타이밍으로 등록돼 있어야(=콜렉터가 실제로 바인딩된
+-- 카드) 올라간다. defer_cost면 코스트 미지불(COST_UNPAYABLE)만은 통과시킨다.
+function Q.enqueue_siblings(cards, timing, base_context, options)
+	options = options or {}
+	local enqueued = {}
+	for _, card in ipairs(cards or {}) do
+		local definition = opcg.runtime and opcg.runtime.get_definition
+			and opcg.runtime.get_definition(card)
+		for _, effect in ipairs(definition and definition.effects or {}) do
+			local resolver = timing_matches(effect, timing)
+				and timing_resolver(card, effect, timing) or nil
+			if resolver and not Q.is_pending(card, effect, timing) then
+				local context = shallow_copy(base_context)
+				context.card = card
+				context.player = card:GetControler()
+				context.timing = timing
+				local ok, reason = opcg.runtime.can_resolve(card, effect.effect_id, context)
+				if (ok or (options.defer_cost and reason == "COST_UNPAYABLE"))
+					and enqueue_scope_allows(effect, card, timing, context) then
+					enqueued[#enqueued + 1] = Q.enqueue(card, effect, resolver, context, {
+						description=description_for(card, effect, 0),
+						timing=timing,
+						defer_cost=options.defer_cost,
+					})
+				end
+			end
+		end
+	end
+	return enqueued
 end
 
 local function each_card(cards, callback)

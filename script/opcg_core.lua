@@ -2632,6 +2632,21 @@ function C.BindCard(card, definition)
 							range=opcg.IsStage(card) and LOCATION_FZONE or LOCATION_MZONE,
 							description_index=effect_index,
 							timing=timing,
+							-- 같은 어택의 [상대의 어택 시]는 한 창에서 소유자가 순서를
+							-- 고른다: 코스트는 발동 시 판정(보니 두웅 액티브 → 리더
+							-- 보니 두웅 레스트), 형제 카드는 첫 콜렉터가 함께 올린다.
+							defer_cost=true,
+							siblings=function(e)
+								local player = e:GetHandler():GetControler()
+								local group = Duel.GetFieldGroup(player, LOCATION_MZONE + LOCATION_FZONE, 0)
+								local cards = {}
+								local member = group:GetFirst()
+								while member do
+									cards[#cards + 1] = member
+									member = group:GetNext()
+								end
+								return cards
+							end,
 						})
 					native:SetCondition(function(e, _, _, event_player)
 						return event_player ~= e:GetHandler():GetControler()
