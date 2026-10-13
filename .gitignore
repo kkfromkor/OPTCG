@@ -1,0 +1,13 @@
+release/
+*.zip
+*.7z
+*.rar
+*.apk
+*.aab
+*.ipa
+*.pdb
+*.obj
+*.o
+*.log
+.DS_Store
+Thumbs.db
