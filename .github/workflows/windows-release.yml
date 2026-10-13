@@ -1,0 +1,28 @@
+name: Windows release
+
+on:
+  push:
+    tags:
+      - 'rev[0-9]*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish update archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rev="${GITHUB_REF_NAME#rev}"
+          asset="release-staging/OPCGPro-update-r${rev}.zip"
+          test -f "$asset"
+          gh release create "$GITHUB_REF_NAME" "$asset" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "OPCGPRO Windows rev${rev}" \
+            --notes "Windows client update rev${rev}."
