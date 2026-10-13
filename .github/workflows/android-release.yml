@@ -21,6 +21,9 @@ jobs:
           set -euo pipefail
           rev="${GITHUB_REF_NAME#mobile-r}"
           asset="release-staging/OPCGPro_Mobile_REV${rev}.apk"
+          if [ -d "${asset}.parts" ]; then
+            cat "${asset}.parts/"*.part > "$asset"
+          fi
           test -f "$asset"
           sha256sum -c "${asset}.sha256"
           gh release create "$GITHUB_REF_NAME" "$asset" \
