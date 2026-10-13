@@ -1,8 +1,0 @@
-REV66: actual REV65 baseline, kkfromkor repository cutover only.
-
-- Retains REV65 waiting-room deck preview, BLOCKER indicator, invitations, launcher, game data, resources and original server profiles.
-- Changes runtime data and update endpoints to kkfromkor/OPTCG. Migrates only the recognised repository configuration and existing Git origin.
-- Preserves user servers and other preferences. No server address, port, router or firewall migration is performed.
-- Same package ID and signing certificate as the published REV65 APK; versionCode 66 permits an in-place update.
-- Native build, DEX preservation, packaged-entry preservation, migration tests, JNI exports, alignment and signature checks passed.
-- No physical Android device was available for installation, rendering or live-duel verification.
