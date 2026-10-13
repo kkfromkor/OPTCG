@@ -1,11 +1,11 @@
 [
   {
-    "sha256": "968eab12283a06d98f906406725b39be93646ce5544e3e551610c83bea9727f1",
-    "size": 106225006,
-    "name": "OPCGPro_Mobile_REV62.apk",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r62/OPCGPro_Mobile_REV62.apk",
-    "md5": "bb61aa66dc842d02bee3baad8af1ae68",
-    "rev": 62,
-    "notes": "Android REV62: move runtime data, repository downloads, and updates to the standalone kkfromkor/OPTCG service."
+    "sha256": "3846c2143134434444ed1d6fc576e11ca4974b25792b2f70c1043a2ce82cfa29",
+    "size": 101084266,
+    "name": "OPCGPro_Mobile_REV63.apk",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r63/OPCGPro_Mobile_REV63.apk",
+    "md5": "55c04a3a935821f50ee5621c2473e0a6",
+    "rev": 63,
+    "notes": "Android REV63: refresh public/LAN PC server profiles while preserving user settings and custom servers; kkfromkor-only runtime data and updates. External access requires TCP 7911/7922 forwarded to 192.168.1.100."
   }
 ]
