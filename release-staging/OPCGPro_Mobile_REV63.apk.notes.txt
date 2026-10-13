@@ -1,0 +1,11 @@
+Android REV63
+
+- Refresh the server list on existing installs without resetting decks, nicknames or custom servers. Modified configuration files are backed up.
+- OPCGPRO (kkfromkor): 182.237.204.36, TCP 7911 (duel) and 7922 (room list).
+- OPCGPRO LAN (same Wi-Fi): 192.168.1.100, the same ports.
+- Runtime data and updates use kkfromkor/OPTCG only.
+- Signed with the same certificate as REV62; install over the existing app.
+
+For external access to the new PC server, forward TCP 7911 and 7922 to 192.168.1.100 in the router. The public endpoint currently returns a different room list from the new local instance; a successful public response alone does not confirm that port forwarding targets this PC.
+
+Build and packaged configuration/signature validation passed. No Android phone was attached for on-device verification.

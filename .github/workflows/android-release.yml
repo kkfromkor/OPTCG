@@ -1,0 +1,30 @@
+name: Android release
+
+on:
+  push:
+    tags:
+      - 'mobile-r[0-9]*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and publish APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rev="${GITHUB_REF_NAME#mobile-r}"
+          asset="release-staging/OPCGPro_Mobile_REV${rev}.apk"
+          test -f "$asset"
+          sha256sum -c "${asset}.sha256"
+          gh release create "$GITHUB_REF_NAME" "$asset" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "OPCGPRO Android REV${rev}" \
+            --notes-file "${asset}.notes.txt" \
+            --latest=false
