@@ -1,11 +1,11 @@
 [
   {
-    "sha256": "3f8ce0eef7c22aa91dfd75a97a0ff2ace3ef8198316e2c74f1911e82f2897db4",
+    "sha256": "1cb98944863e9b93fa81c1008c4092100c126143aa2e6f2937779c4cd89c8fef",
     "size": 106841099,
-    "name": "OPCGPro_Mobile_REV67.apk",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r67/OPCGPro_Mobile_REV67.apk",
-    "md5": "6f55efc876038996faafb203438f8037",
-    "rev": 67,
-    "notes": "REV67 shows only the kkfromkor PC server (182.237.204.36, duel 7911, HTTP lobby 7922). All previous server entries are excluded from the mobile list; saved configs, decks, data repositories, signing identity and REV65 features remain intact."
+    "name": "OPCGPro_Mobile_REV68.apk",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r68/OPCGPro_Mobile_REV68.apk",
+    "md5": "eee2d2e082c9d3dda6a79ad2ce3f7596",
+    "rev": 68,
+    "notes": "REV68 creates room invitation links for https://opcgpro-kkfromkor.pages.dev/ and adds Open in web buttons. REV65 features, the existing kkfromkor PC server, user data, repository settings and Android signing identity are retained. Android package installation confirmation may be required."
   }
 ]
