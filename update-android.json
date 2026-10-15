@@ -1,11 +1,11 @@
 [
   {
-    "sha256": "1cb98944863e9b93fa81c1008c4092100c126143aa2e6f2937779c4cd89c8fef",
     "size": 106841099,
-    "name": "OPCGPro_Mobile_REV68.apk",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r68/OPCGPro_Mobile_REV68.apk",
-    "md5": "eee2d2e082c9d3dda6a79ad2ce3f7596",
-    "rev": 68,
-    "notes": "REV68 creates room invitation links for https://opcgpro-kkfromkor.pages.dev/ and adds Open in web buttons. REV65 features, the existing kkfromkor PC server, user data, repository settings and Android signing identity are retained. Android package installation confirmation may be required."
+    "sha256": "878dd92237954f3d28c228bf22d66062dfa03e26cdbdb95bb55bcf62ff6b972b",
+    "md5": "15a18586306632fb1e70354f26ac2dee",
+    "name": "OPCGPro_Mobile_REV69.apk",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r69/OPCGPro_Mobile_REV69.apk",
+    "notes": "REV69 fixes the Android duel-start native crash with a complete clean rebuild and ABI regression checks. The repaired build was verified entering a duel on a Samsung Android 11 device. Decks, settings, game data, kkfromkor PC server, web invitations and signing identity are preserved. Android installation confirmation may be required. Windows and iOS Ad Hoc releases are unchanged.",
+    "rev": 69
   }
 ]
