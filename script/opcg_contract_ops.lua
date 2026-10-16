@@ -1626,14 +1626,25 @@ function X.before_remove(cards, reason, destination, context)
 	end
 	return kept
 end
-function X.before_rest(card, context)
+function X.before_rest(card, context, cause)
+	if (cause or "EFFECT") ~= "EFFECT" then return true end
+	-- A REST action is caused by the resolving effect, not by its triggering
+	-- event's reason/reason_player (which can be 0, battle, cost, or the other
+	-- player). Keep those event fields intact for conditions and cost payment.
+	local source = context and context.card
+	local origin = {
+		reason_card = source,
+		reason_player = context and (context.player
+			or (source and source.GetControler and source:GetControler())
+			or context.effect_player),
+	}
 	for _, entry in ipairs(card_effect_entries(card, opcg.EFFECT_REPLACE_REST)) do
 		local action = entry.value
 		local local_context = copy_context(context, entry.source)
 		local_context.event_target = card
 		local_context.event_targets = {card}
 		if type(action) == "table" and reason_matches(action, card,
-			(context and context.reason) or REASON_EFFECT, context, false)
+			REASON_EFFECT, origin, false)
 			and replacement_available(action, local_context)
 			and apply_replacement(action, local_context) then return false end
 	end

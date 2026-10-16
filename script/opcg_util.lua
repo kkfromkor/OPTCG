@@ -350,12 +350,21 @@ function opcg.CanBeRested(c, cause, source_player)
 		{ cause = cause or "EFFECT", source_player = source_player })
 end
 function opcg.SetRested(c, context, cause)
-	local event = context or (opcg.contract_ops and opcg.contract_ops.current_context)
-	local source = event and (event.player or event.effect_player
-		or (event.card and event.card.GetControler and event.card:GetControler()))
+	cause = cause or "EFFECT"
+	-- Attack/block declarations are game actions, not the last resolved effect.
+	-- In particular, never carry that effect into Shanks' ON_SELF_RESTED trigger.
+	local event = context
+	if cause == "ATTACK" or cause == "BLOCK" then
+		event = nil
+	elseif not event and cause == "EFFECT" then
+		event = opcg.contract_ops and opcg.contract_ops.current_context
+	end
+	local source = event and (event.player
+		or (event.card and event.card.GetControler and event.card:GetControler())
+		or event.effect_player)
 	if not opcg.CanBeRested(c, cause, source) then return false end
 	if opcg.contract_ops and opcg.contract_ops.before_rest
-		and not opcg.contract_ops.before_rest(c, event) then return false end
+		and not opcg.contract_ops.before_rest(c, event, cause) then return false end
 	local moved = Duel.ChangePosition(c, POS_FACEUP_DEFENSE)
 	if moved and moved ~= 0 and opcg.contract_ops then
 		local owner = c:GetControler()
@@ -379,7 +388,9 @@ function opcg.SetRested(c, context, cause)
 			emitted.event_targets = {c}
 			emitted.event_cards = {c}
 			emitted.event_count = 1
-			emitted.reason_player = event.effect_player or event.player
+			-- .effect_player can describe the event which triggered this effect.
+			-- Use the current action's controller, just as CanBeRested does.
+			emitted.reason_player = source
 			opcg.contract_ops.emit("ON_OWN_CHARACTER_RESTED_BY_EFFECT", emitted, owner)
 			if emitted.reason_player ~= nil and emitted.reason_player ~= owner then
 				opcg.contract_ops.emit("ON_SELF_RESTED_BY_OPPONENT_EFFECT", emitted, owner, {c})
