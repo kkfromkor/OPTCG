@@ -1,11 +1,11 @@
 [
   {
-    "size": 106841099,
-    "sha256": "878dd92237954f3d28c228bf22d66062dfa03e26cdbdb95bb55bcf62ff6b972b",
-    "md5": "15a18586306632fb1e70354f26ac2dee",
-    "name": "OPCGPro_Mobile_REV69.apk",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r69/OPCGPro_Mobile_REV69.apk",
-    "notes": "REV69 fixes the Android duel-start native crash with a complete clean rebuild and ABI regression checks. The repaired build was verified entering a duel on a Samsung Android 11 device. Decks, settings, game data, kkfromkor PC server, web invitations and signing identity are preserved. Android installation confirmation may be required. Windows and iOS Ad Hoc releases are unchanged.",
-    "rev": 69
+    "size": 106882059,
+    "sha256": "2d86c2c65f2d93f6c7672fe99cb83ee6a581c19c6b2565facc503a36437fe07d",
+    "md5": "f6774c6d789185fc6538a31e593a97d3",
+    "name": "OPCGPro_Mobile_REV70.apk",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r70/OPCGPro_Mobile_REV70.apk",
+    "rev": 70,
+    "notes": "REV70: 필드를 떠난 카드의 공격 반응 효과 차단(KO 효과 유지), 선택창을 유지한 트래쉬 확인, 음수 파워 표시·계산 수정. 기존 덱·설정·서명 유지. Android 설치 확인이 필요할 수 있습니다."
   }
 ]
