@@ -664,10 +664,14 @@ function C.CheckCondition(op, condition, context)
 		return opcg.LifeCount(0) == n or opcg.LifeCount(1) == n
 	end
 	if op == "CHARACTER_NAME_ABSENT" or op == "OTHER_CHARACTER_NAME_ABSENT" then
+		-- Only matching copies count (e.g. OP12-102 checks original cost 2).
+		local predicate = filter_for(condition.filter, context)
+		if not predicate then return false end
 		return Duel.GetMatchingGroupCount(function(card)
 			return opcg.IsCharacter(card)
 				and (op ~= "OTHER_CHARACTER_NAME_ABSENT" or card ~= context.card)
 				and opcg.GetName(card) == condition.name
+				and predicate(card)
 		end, player, LOCATION_MZONE, 0, nil) == 0
 	end
 	if op == "ONLY_CHARACTERS_MATCH" then
