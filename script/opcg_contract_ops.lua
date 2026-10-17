@@ -1695,9 +1695,16 @@ local function emit_candidates(player, cards)
 	end
 	return field_cards(player)
 end
+local function emission_context(timing, context)
+	-- Notifications must not replace the timing of the effect that emitted them.
+	-- An event may already be in trash after paying its activation cost.
+	local event = {}
+	for key, value in pairs(context or {}) do event[key] = value end
+	event.timing = timing
+	return event
+end
 local function enqueue_emit(timing, context, player, cards, options)
-	context = context or {}
-	context.timing = timing
+	context = emission_context(timing, context)
 	local candidates = emit_candidates(player, cards)
 	if #candidates == 0 then return {} end
 	if opcg.effect_queue and opcg.effect_queue.enqueue_timing then
@@ -1716,8 +1723,7 @@ local function append_all(out, items)
 	return out
 end
 function X.emit(timing, context, player, cards)
-	context = context or {}
-	context.timing = timing
+	context = emission_context(timing, context)
 	local candidates = emit_candidates(player, cards)
 	if #candidates == 0 then return {} end
 	local queue = opcg.effect_queue
