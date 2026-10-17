@@ -188,10 +188,28 @@ end
 local function modify(source, target, code, value, duration)
 	return single_effect(source, target, code, value, duration)
 end
+local removal_origin
+function X.with_removal_origin(cards, reason, context, operation)
+	-- A life trigger runs inside the battle carrier (owned by player 0),
+	-- not inside its own native effect. Bind the actual actor to this move's
+	-- targets only; current_context can be overwritten by replacement costs.
+	local source = context and context.card
+	local player = context and context.player
+	if player == nil and source then player = source:GetControler() end
+	local previous = removal_origin
+	local targets = {}
+	for _, card in ipairs(cards or {}) do targets[card] = true end
+	removal_origin = {player=player, targets=targets, reason=reason}
+	local result = table.pack(pcall(operation))
+	removal_origin = previous
+	if not result[1] then error(result[2], 0) end
+	return table.unpack(result, 2, result.n)
+end
 local function trash(cards, reason)
 	reason = reason or REASON_EFFECT
+	local context = X.current_context
 	if X.before_remove then
-		cards = X.before_remove(cards, reason, "TRASH", X.current_context)
+		cards = X.before_remove(cards, reason, "TRASH", context)
 	end
 	local group = to_group(cards)
 	if opcg.RecordDonAtLeave then opcg.RecordDonAtLeave(cards) end -- 둥 요구치 스냅샷
@@ -203,8 +221,9 @@ local function trash(cards, reason)
 	end
 	-- [2026-08-10 유저 재정] 선제 둥 반환 폐지(내성 잔존 시 둥 유지) —
 	-- 실제 이탈분은 EVENT_TO_GRAVE 워처가 코스트로 레스트 귀환시킨다.
-	local moved = Duel.SendtoGrave(group, reason)
-	if X.after_remove then X.after_remove(cards, reason, "TRASH", X.current_context) end
+	local moved = X.with_removal_origin(cards, reason, context,
+		function() return Duel.SendtoGrave(group, reason) end)
+	if X.after_remove then X.after_remove(cards, reason, "TRASH", context) end
 	return moved
 end
 local function play(card, player, chooser, rested)
@@ -1472,10 +1491,17 @@ end
 -- TARGET = the player's decision (one call, prompt included),
 -- VALUE = per-card "is this one protected", OPERATION = pay + instead.
 register_native_replace = function(card, action, condition, codes)
-	-- [OP17-045 유저 제보] 코어의 rp(reason_player)는 미설정 시 턴 플레이어로
-	-- 폴백된다 — 자기 턴에 상대 효과 제거를 맞으면 OPPONENT_EFFECT 판정이
-	-- 실패해 치환이 침묵했다. 원인 효과(re)의 핸들러 주체를 우선한다.
-	local function actor_of(re, rp)
+	-- Lua removals bind their actual actor even inside a battle/trigger carrier.
+	-- Pure native removals retain the handler-player fallback (OP17-045): rp
+	-- can default to the turn player when an opponent effect acts on your turn.
+	local function actor_of(target, re, r, rp)
+		local origin = removal_origin
+		local cause_mask = REASON_EFFECT | REASON_COST | REASON_RULE | REASON_BATTLE
+		if origin and origin.targets[target]
+			and (origin.reason & cause_mask) == (r & cause_mask)
+			and (origin.player == 0 or origin.player == 1) then
+			return origin.player
+		end
 		if re and re.GetHandlerPlayer then
 			local hp = re:GetHandlerPlayer()
 			if hp == 0 or hp == 1 then return hp end
@@ -1511,25 +1537,26 @@ register_native_replace = function(card, action, condition, codes)
 		context.ko_target = target
 		return context
 	end
-	local function eligible(eg, r, rp, ko_event)
+	local function eligible(eg, r, re, rp, ko_event)
 		if not eg then return false end
-		local found = nil
+		local found, actor
 		for target in aux.Next(eg) do
+			actor = actor_of(target, re, r, rp)
 			if protects(target) and reason_matches(action, target, r,
-				{ reason_player = rp, effect_player = rp }, ko_event) then
+				{ reason_player = actor, effect_player = actor }, ko_event) then
 				found = target
 				break
 			end
 		end
 		if not found then return false end
-		return replacement_available(action, replace_context(found, r, rp)), found
+		return replacement_available(action, replace_context(found, r, actor)), found, actor
 	end
 	for _, code in ipairs(codes) do
 		local is_destroy_code = code == EFFECT_DESTROY_REPLACE
 		-- 배틀 파괴 흐름에서 operation은 지연 실행(desrep_chain)이라 그 시점의
 		-- eg는 이미 생존자가 소거된 빈 그룹 — 판정 단계에서 찾은 생존자를
 		-- 여기 기억해 뒀다가 operation(도장·코스트 문맥)이 쓴다.
-		local last_found = nil
+		local last_found, last_actor
 		local native = Effect.CreateEffect(card)
 		native:SetType(EFFECT_TYPE_FIELD + EFFECT_TYPE_CONTINUOUS)
 		native:SetCode(code)
@@ -1539,16 +1566,16 @@ register_native_replace = function(card, action, condition, codes)
 			-- DESTROY_REPLACE twin owns those, or we would intercept twice
 			if not is_destroy_code and (r & REASON_DESTROY) ~= 0 then return false end
 			if condition and not condition(e, tp, eg, ep, ev, re, r, rp) then return false end
-			local ok, found = eligible(eg, r, actor_of(re, rp), is_destroy_code)
-			if ok then last_found = found end
+			local ok, found, actor = eligible(eg, r, re, rp, is_destroy_code)
+			if ok then last_found, last_actor = found, actor end
 			return ok
 		end)
 		native:SetTarget(function(e, tp, eg, ep, ev, re, r, rp, chk)
 			-- chk==0 is the ACTION-FORBIDDEN eligibility probe the core runs
 			-- from is_activateable; the real decision call arrives without it
 			if chk == 0 then
-				local ok, found = eligible(eg, r, actor_of(re, rp), is_destroy_code)
-				if ok then last_found = found end
+				local ok, found, actor = eligible(eg, r, re, rp, is_destroy_code)
+				if ok then last_found, last_actor = found, actor end
 				return ok
 			end
 			-- 「~할 수 있다」: the decision happens HERE (the operation only
@@ -1565,7 +1592,9 @@ register_native_replace = function(card, action, condition, codes)
 				if protects(target) then saved = target break end
 			end
 			saved = saved or last_found
-			local context = replace_context(saved or card, r, actor_of(re, rp))
+			local actor = last_actor
+			if actor == nil then actor = actor_of(saved or card, re, r, rp) end
+			local context = replace_context(saved or card, r, actor)
 			for _, cost in ipairs(action.replacement_costs or {}) do
 				OPCGCore.PayCost(cost.op, cost, context)
 			end

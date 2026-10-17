@@ -260,10 +260,10 @@ local function selector_with_state(selector, state)
 	out.filter = filter
 	return out
 end
-local function remove_cards(cards, reason, destination)
+local function remove_cards(cards, reason, destination, context)
+	context = context or (opcg.contract_ops and opcg.contract_ops.current_context)
 	if opcg.contract_ops and opcg.contract_ops.before_remove then
-		cards = opcg.contract_ops.before_remove(cards, reason, destination,
-			opcg.contract_ops.current_context)
+		cards = opcg.contract_ops.before_remove(cards, reason, destination, context)
 	end
 	local group = array_group(cards)
 	-- [2026-08-12] 이탈 직전 부착 둥 스냅샷(【두웅!!×N】 KO시류 게이트용)
@@ -283,21 +283,25 @@ local function remove_cards(cards, reason, destination)
 	-- 등)으로 잔존한 카드의 둥까지 떨어뜨렸다. 실제로 떠난 숙주의 둥은 코어
 	-- 오버레이 처분으로 트래시에 떨어지고, EVENT_TO_GRAVE 워처(RescueLooseDon)가
 	-- 착지 즉시 코스트 에리어로 레스트 귀환시킨다(공식 10-2-3 사후 집행).
+	local function move()
+		if destination == "HAND" then return Duel.SendtoHand(group, nil, reason)
+		elseif destination == "DECK_TOP" then return Duel.SendtoDeck(group, nil, SEQ_DECKTOP, reason)
+		elseif destination == "DECK_BOTTOM" then return Duel.SendtoDeck(group, nil, SEQ_DECKBOTTOM, reason)
+		elseif (reason & REASON_DESTROY) ~= 0 then
+			-- a K.O. is a real destroy: immunity (INDESTRUCTABLE), EVENT_DESTROYED
+			-- and the native replacement machinery all hang off Duel.Destroy —
+			-- SendtoGrave used to bypass every one of them
+			-- [2026-08-10 룰 재정] 무효 상태로 KO → 【KO 시】 봉인 스탬프
+			if opcg.StampNegatedKO then opcg.StampNegatedKO(cards) end
+			return Duel.Destroy(group, reason & ~REASON_DESTROY)
+		else return Duel.SendtoGrave(group, reason) end
+	end
 	local moved
-	if destination == "HAND" then moved = Duel.SendtoHand(group, nil, reason)
-	elseif destination == "DECK_TOP" then moved = Duel.SendtoDeck(group, nil, SEQ_DECKTOP, reason)
-	elseif destination == "DECK_BOTTOM" then moved = Duel.SendtoDeck(group, nil, SEQ_DECKBOTTOM, reason)
-	elseif (reason & REASON_DESTROY) ~= 0 then
-		-- a K.O. is a real destroy: immunity (INDESTRUCTABLE), EVENT_DESTROYED
-		-- and the native replacement machinery all hang off Duel.Destroy —
-		-- SendtoGrave used to bypass every one of them
-		-- [2026-08-10 룰 재정] 무효 상태로 KO → 【KO 시】 봉인 스탬프
-		if opcg.StampNegatedKO then opcg.StampNegatedKO(cards) end
-		moved = Duel.Destroy(group, reason & ~REASON_DESTROY)
-	else moved = Duel.SendtoGrave(group, reason) end
+	if opcg.contract_ops and opcg.contract_ops.with_removal_origin then
+		moved = opcg.contract_ops.with_removal_origin(cards, reason, context, move)
+	else moved = move() end
 	if opcg.contract_ops and opcg.contract_ops.after_remove then
-		opcg.contract_ops.after_remove(cards, reason, destination,
-			opcg.contract_ops.current_context)
+		opcg.contract_ops.after_remove(cards, reason, destination, context)
 	end
 	return moved
 end
@@ -1781,15 +1785,15 @@ function C.ExecuteAction(op, action, context)
 		cards = choose_selector(selector, context)
 		if op == "REST" then for _, card in ipairs(cards) do opcg.SetRested(card, context) end
 		elseif op == "SET_ACTIVE" then for _, card in ipairs(cards) do opcg.SetActive(card, true) end
-		elseif op == "KO" then remove_cards(cards, REASON_EFFECT + REASON_DESTROY, "TRASH")
+		elseif op == "KO" then remove_cards(cards, REASON_EFFECT + REASON_DESTROY, "TRASH", context)
 		elseif op == "TRASH" then
 			if action.schedule then
 				assert(opcg.contract_ops.schedule(action.schedule, context.card,
-					function() remove_cards(cards, REASON_EFFECT, "TRASH") end), "unsupported schedule")
+					function() remove_cards(cards, REASON_EFFECT, "TRASH", context) end), "unsupported schedule")
 			else
-				remove_cards(cards, REASON_EFFECT, "TRASH")
+				remove_cards(cards, REASON_EFFECT, "TRASH", context)
 			end
-		elseif op == "RETURN_TO_HAND" then remove_cards(cards, REASON_EFFECT, "HAND")
+		elseif op == "RETURN_TO_HAND" then remove_cards(cards, REASON_EFFECT, "HAND", context)
 		elseif op == "RETURN_TO_DECK_BOTTOM" then
 			local operation = function()
 				-- [2026-08-19 유저 제보 OP06-058] "주인의 덱 맨 아래로" - 카드는 각자
@@ -1802,7 +1806,7 @@ function C.ExecuteAction(op, action, context)
 					local receiver = card:GetOwner()
 					returned_per_owner[receiver] = (returned_per_owner[receiver] or 0) + 1
 				end
-				remove_cards(cards, REASON_EFFECT, "DECK_BOTTOM")
+				remove_cards(cards, REASON_EFFECT, "DECK_BOTTOM", context)
 				if action.order == "CHOOSE" then
 					for receiver, count in pairs(returned_per_owner) do
 						if count > 1 then Duel.SortDeckbottom(chooser, receiver, count) end
