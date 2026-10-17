@@ -20,7 +20,8 @@ function s.initial_effect(c)
             source_selector={
               count=1,
               kind=[[LEADER]],
-              mode=[[UP_TO]],
+              -- The opponent's sole leader is a fixed reference, not a choice.
+              mode=[[EXACT]],
               owner=[[OPPONENT]],
             },
           },
