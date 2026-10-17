@@ -92,6 +92,31 @@ function runtime.once_used(card, effect, context)
     return usage ~= nil and usage[once_key(effect, context or {})] == true
 end
 
+-- These timings intentionally activate outside the field. Other automatic
+-- effects must still belong to the same field instance when they activate.
+local off_field_timings = {
+    ON_KO=true, ON_SELF_KO=true, ON_KO_BY_OPPONENT_EFFECT=true,
+    LIFE_TRIGGER=true, COUNTER=true, MAIN=true, ACTIVATE_MAIN=true,
+    RULE=true, GAME_START=true,
+}
+
+function runtime.capture_trigger_source(card, context)
+    context.trigger_source_card = card
+    context.trigger_source_field_id = card.GetFieldID and card:GetFieldID() or nil
+end
+
+function runtime.trigger_source_available(card, context)
+    if not context.timing or off_field_timings[context.timing] then return true end
+    if card.IsLocation and not card:IsLocation(LOCATION_MZONE + LOCATION_SZONE) then
+        return false
+    end
+    if context.trigger_source_card == card and context.trigger_source_field_id ~= nil
+        and card.GetFieldID and card:GetFieldID() ~= context.trigger_source_field_id then
+        return false
+    end
+    return true
+end
+
 function runtime.can_resolve(card, effect_id, context)
     local definition = runtime._definitions[card]
     if not definition then
@@ -111,6 +136,9 @@ function runtime.can_resolve(card, effect_id, context)
         return false, "UNSUPPORTED_SHAPE"
     end
     context = context or {}
+    if not runtime.trigger_source_available(card, context) then
+        return false, "TRIGGER_SOURCE_LEFT_FIELD"
+    end
     context.card = context.card or card
     context.definition = definition
     context.effect = effect

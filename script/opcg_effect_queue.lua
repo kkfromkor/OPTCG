@@ -164,6 +164,9 @@ function Q.enqueue(card, effect, resolver, context, options)
 	options = options or {}
 	context = shallow_copy(context)
 	if options.timing ~= nil then context.timing = options.timing end
+	if opcg.runtime and opcg.runtime.capture_trigger_source then
+		opcg.runtime.capture_trigger_source(card, context)
+	end
 	Q._serial = Q._serial + 1
 	local generation
 	if Q._active_item then
@@ -325,6 +328,18 @@ function Q.flush()
 		else
 			Q._inflight = nil
 		end
+	end
+	-- Discard stale field sources before offering activation order or prompts.
+	if opcg.runtime and opcg.runtime.trigger_source_available then
+		local removed = false
+		for index = #Q._items, 1, -1 do
+			local item = Q._items[index]
+			if not opcg.runtime.trigger_source_available(item.card, item.context) then
+				table.remove(Q._items, index)
+				removed = true
+			end
+		end
+		if removed then sync_queue_display() end
 	end
 	local generation, player = eligible_bucket()
 	if generation == nil then return false end
@@ -576,6 +591,8 @@ local function build_resolver(card, effect, description, trigger_type)
 	resolver:SetCondition(function(e, _, _, _, ev, re)
 		local _, item = find_index(ev, e)
 		return re == e and item ~= nil
+			and (not opcg.runtime.trigger_source_available
+				or opcg.runtime.trigger_source_available(item.card, item.context))
 	end)
 	if trigger_type == EFFECT_TYPE_TRIGGER_O then
 		resolver:SetTarget(function(e, _, _, _, ev, _, _, _, check)
@@ -602,7 +619,8 @@ local function build_resolver(card, effect, description, trigger_type)
 		resolver:SetTarget(function(e, _, _, _, ev, _, _, _, check)
 			if check == 0 then
 				local _, item = find_index(ev, e)
-				return item ~= nil
+				return item ~= nil and opcg.runtime.can_resolve(item.card,
+					item.effect.effect_id, item.context)
 			end
 			-- One OPCG effect resolves before the next effect may activate.
 			Duel.SetChainLimit(aux.FALSE)
@@ -939,6 +957,11 @@ end
 -- drain picks the item up at its 8-6 boundary.
 function Q.enqueue_direct(card, effect, context, options)
 	options = options or {}
+	context = shallow_copy(context)
+	if options.timing ~= nil then context.timing = options.timing end
+	if opcg.runtime and opcg.runtime.capture_trigger_source then
+		opcg.runtime.capture_trigger_source(card, context)
+	end
 	Q._direct_serial = Q._direct_serial + 1
 	local generation = Q._direct_active and (Q._direct_active.generation + 1) or 0
 	local item = {
