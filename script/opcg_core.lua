@@ -2146,8 +2146,10 @@ function C.ExecuteAction(op, action, context)
 						opcg.contract_ops.emit("ON_OPPONENT_HIGH_COST_OR_EFFECT_PLAY", act, 1 - player)
 					end
 				end
-				local done = C.DispatchTiming(card, timing, nil)
-				effected = effected or #(done or {}) > 0
+				local done = C.DispatchTiming(card, timing, nil, true)
+				for _, result in ipairs(done or {}) do
+					effected = effected or result.ok == true
+				end
 			end
 			context.last_action_succeeded = #chosen > 0 or action.mode == "UP_TO"
 			context.last_action_effected = effected
@@ -2169,7 +2171,13 @@ function C.ExecuteAction(op, action, context)
 			elseif src:find("카운터", 1, true) then timing = "COUNTER"
 			else timing = "MAIN" end
 		end
-		context.last_action_succeeded = #(C.DispatchTiming(context.card, timing, context) or {}) > 0
+		local done = C.DispatchTiming(context.card, timing, context, true)
+		local succeeded = false
+		for _, result in ipairs(done or {}) do
+			succeeded = succeeded or result.ok == true
+		end
+		context.last_action_succeeded = succeeded
+		context.last_action_effected = succeeded
 		return {}
 	elseif op == "CHOOSE" then
 		local available = {}
@@ -2699,12 +2707,12 @@ function C.BindCard(card, definition)
 	return true
 end
 
-function C.DispatchTiming(card, timing, context)
+function C.DispatchTiming(card, timing, context, activation_by_effect)
 	context = context or {}
 	context.card = context.card or card
 	context.player = context.player == nil and card:GetControler() or context.player
 	context.turn_id = context.turn_id or (Duel.GetTurnCount and Duel.GetTurnCount() or 0)
-	return opcg.runtime.dispatch(card, timing, context)
+	return opcg.runtime.dispatch(card, timing, context, activation_by_effect)
 end
 function C.QuarantineCard() return true end
 function C.AdvanceBoundary(boundary, context)

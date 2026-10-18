@@ -117,7 +117,7 @@ function runtime.trigger_source_available(card, context)
     return true
 end
 
-function runtime.can_resolve(card, effect_id, context)
+function runtime.can_resolve(card, effect_id, context, activation_by_effect)
     local definition = runtime._definitions[card]
     if not definition then
         if runtime._review_definitions[card] then return false, "REVIEW_QUARANTINED" end
@@ -136,7 +136,10 @@ function runtime.can_resolve(card, effect_id, context)
         return false, "UNSUPPORTED_SHAPE"
     end
     context = context or {}
-    if not runtime.trigger_source_available(card, context) then
+    -- Explicitly invoked printed effects may resolve outside the field (e.g.
+    -- OP08-106 Life Trigger). Keep this permission on the call, not in context,
+    -- so effects emitted during resolution cannot inherit it.
+    if activation_by_effect ~= true and not runtime.trigger_source_available(card, context) then
         return false, "TRIGGER_SOURCE_LEFT_FIELD"
     end
     context.card = context.card or card
@@ -252,8 +255,13 @@ function runtime.resolve_prevalidated(card, effect_id, context)
     return resolve_effect(card, effect, context)
 end
 
-function runtime.dispatch(card, timing, context)
+function runtime.dispatch(card, timing, context, activation_by_effect)
     context = context or {}
+    if activation_by_effect == true then
+        local nested = {}
+        for key, value in pairs(context) do nested[key] = value end
+        context = nested
+    end
     context.timing = timing
     local definition = runtime._definitions[card]
     if not definition then
@@ -268,7 +276,7 @@ function runtime.dispatch(card, timing, context)
     for _, effect in ipairs(definition.effects) do
         local dispatch_effect = effect_for_timing(effect, timing)
         if dispatch_effect then
-            local ok, value = runtime.can_resolve(card, effect.effect_id, context)
+            local ok, value = runtime.can_resolve(card, effect.effect_id, context, activation_by_effect)
             if ok then
                 local previous_effect = context.effect
                 context.effect = dispatch_effect
