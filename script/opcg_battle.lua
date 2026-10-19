@@ -446,7 +446,6 @@ local function run_counter_step(live)
 		-- 연속 수치 구간만 한 묶음 트래시+합산(교환법칙 등가, 연출 절약).
 		-- 단계마다 남은 몫 기대치를 다시 밀어 마젠타가 이중가산 없이 진실을
 		-- 유지한다 — 이벤트가 둥·조건을 바꾸면 다음 푸시가 그걸 반영한다.
-		local resolved_event = false
 		local index = 1
 		while index <= #picked do
 			target = Duel.GetAttackTarget()
@@ -481,7 +480,6 @@ local function run_counter_step(live)
 				if opcg.IsEvent(card)
 					and opcg.CanRestDon(live.defending_player, opcg.GetCost(card)) then
 					resolve_event_counter(card, live)
-					resolved_event = true
 				end
 				index = index + 1
 			end
@@ -489,12 +487,10 @@ local function run_counter_step(live)
 				counter_expectation(picked_tail(picked, index), live))
 		end
 		Duel.SetCounterPreviewExpectation(live.defending_player, 0)
-		-- 이벤트가 상태를 바꿨으면 창을 다시 연다(추가 사용 기회);
-		-- 수치 카운터만 썼다면 전 후보가 이미 한 창에 나왔으니 종료.
-		if not resolved_event then
-			emit_counter_final(live)
-			return
-		end
+		-- Confirming a selection uses those cards; it does not end the step.
+		-- Rule 7-1-3-1 allows more character or event counters in any order,
+		-- even after the defender exceeds the attacker's power. Rebuild the
+		-- choices until the defender finishes with no cards or none remain.
 	end
 end
 
