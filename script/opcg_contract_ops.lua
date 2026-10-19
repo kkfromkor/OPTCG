@@ -1828,6 +1828,10 @@ local function played_context(card, player, context)
 	local event = {}
 	for key, value in pairs(context or {}) do event[key] = value end
 	if event.card and event.card ~= card then event.source_card = event.card end
+	-- Classify this play from its immediate effect source, not an inherited
+	-- event-activation flag. A Character may have left the field to pay its cost.
+	local source = context and context.card
+	event.played_by_character_effect = source ~= nil and opcg.IsCharacter(source)
 	event.played_card = card
 	event.played_player = player
 	event.event_target = card
@@ -1870,7 +1874,7 @@ function X.emit_played(card, player, context)
 					"ON_OWN_VANILLA_CHARACTER_PLAYED_FROM_HAND",
 					event, player, nil, emit_options))
 			end
-			if opcg.GetBaseCost(card) >= 8 then
+			if opcg.GetBaseCost(card) >= 8 or event.played_by_character_effect then
 				append_all(enqueued, enqueue_emit("ON_OPPONENT_HIGH_COST_OR_EFFECT_PLAY",
 					event, other(player), nil, emit_options))
 			end
@@ -1888,7 +1892,7 @@ function X.emit_played(card, player, context)
 		if opcg.IsVanilla(card) and card:IsPreviousLocation(LOCATION_HAND) then
 			append_all(results, X.emit("ON_OWN_VANILLA_CHARACTER_PLAYED_FROM_HAND", event, player))
 		end
-		if opcg.GetBaseCost(card) >= 8 then
+		if opcg.GetBaseCost(card) >= 8 or event.played_by_character_effect then
 			append_all(results, X.emit("ON_OPPONENT_HIGH_COST_OR_EFFECT_PLAY", event, other(player)))
 		end
 	end

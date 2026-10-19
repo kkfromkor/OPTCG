@@ -736,8 +736,9 @@ function C.CheckCondition(op, condition, context)
 		return target ~= nil and opcg.GetBaseCost(target) <= n
 	end
 	if op == "EVENT_TARGET_BASE_COST_GTE_OR_EFFECT_PLAY" then
-		return context.effect_play == true or context.event_is_effect_play == true
-			or (target ~= nil and opcg.GetBaseCost(target) >= n)
+		local played = context.played_card
+		return played ~= nil and opcg.IsCharacter(played)
+			and (opcg.GetBaseCost(played) >= n or context.played_by_character_effect == true)
 	end
 	if op == "EVENT_TARGET_BASE_POWER_GTE" then
 		-- IR 표기는 amount=5000(행콕 OP14-041) — count 기본값 0과 비교하면
@@ -2143,7 +2144,6 @@ function C.ExecuteAction(op, action, context)
 						opcg.contract_ops.emit("ON_OPPONENT_EVENT_ACTIVATED", act, 1 - player)
 						opcg.contract_ops.emit("ON_OPPONENT_EVENT_OR_TRIGGER_ACTIVATED", act, 1 - player)
 						opcg.contract_ops.emit("ON_OPPONENT_BLOCKER_OR_EVENT_ACTIVATED", act, 1 - player)
-						opcg.contract_ops.emit("ON_OPPONENT_HIGH_COST_OR_EFFECT_PLAY", act, 1 - player)
 					end
 				end
 				local done = C.DispatchTiming(card, timing, nil, true)
@@ -2499,7 +2499,6 @@ local function register_event_play(card, effect)
 			opcg.contract_ops.emit("ON_OPPONENT_EVENT_ACTIVATED", context, 1 - tp)
 			opcg.contract_ops.emit("ON_OPPONENT_EVENT_OR_TRIGGER_ACTIVATED", context, 1 - tp)
 			opcg.contract_ops.emit("ON_OPPONENT_BLOCKER_OR_EVENT_ACTIVATED", context, 1 - tp)
-			opcg.contract_ops.emit("ON_OPPONENT_HIGH_COST_OR_EFFECT_PLAY", context, 1 - tp)
 		end
 		opcg.runtime.resolve(handler, effect.effect_id, context)
 	end)
