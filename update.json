@@ -1,10 +1,10 @@
 [
   {
-    "name": "OPCGPro-update-r69.zip",
-    "rev": 69,
-    "md5": "301042823781749f6009dd7d00f72f94",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev69/OPCGPro-update-r69.zip",
-    "sha256": "5a62447e2c8889376dd5e4f9a2c15377c025a5778a7fd8afa55c4f4409ed7c66",
-    "size": 5345584
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev70/OPCGPro-update-r70.zip",
+    "rev": 70,
+    "md5": "3688cfdaeeedebb05417c354e71dc020",
+    "size": 5629701,
+    "name": "OPCGPro-update-r70.zip",
+    "sha256": "3f07c21da4c469b74b3981171715a466733b1d418ca2455a44f49710c0b95778"
   }
 ]
