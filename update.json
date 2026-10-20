@@ -1,10 +1,11 @@
 [
   {
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev70/OPCGPro-update-r70.zip",
-    "rev": 70,
-    "md5": "3688cfdaeeedebb05417c354e71dc020",
-    "size": 5629701,
-    "name": "OPCGPro-update-r70.zip",
-    "sha256": "3f07c21da4c469b74b3981171715a466733b1d418ca2455a44f49710c0b95778"
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev71/OPCGPro-update-r71.zip",
+    "rev": 71,
+    "md5": "15437396fa8bac2d14e1edfd657dea17",
+    "sha256": "46c0d32077b973a9b5e636b01e94780c9ec15b8a18612da07cb48030c46f933e",
+    "size": 5695282,
+    "name": "OPCGPro-update-r71.zip",
+    "notes": "REV71: Google·카카오 로그인, 계정 덱 자동 연동, 공식 서버 전적 연결."
   }
 ]
