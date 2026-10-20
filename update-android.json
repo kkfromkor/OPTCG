@@ -1,11 +1,11 @@
 [
   {
-    "size": 106882059,
-    "sha256": "2d86c2c65f2d93f6c7672fe99cb83ee6a581c19c6b2565facc503a36437fe07d",
-    "md5": "f6774c6d789185fc6538a31e593a97d3",
-    "name": "OPCGPro_Mobile_REV70.apk",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r70/OPCGPro_Mobile_REV70.apk",
-    "rev": 70,
-    "notes": "REV70: 필드를 떠난 카드의 공격 반응 효과 차단(KO 효과 유지), 선택창을 유지한 트래쉬 확인, 음수 파워 표시·계산 수정. 기존 덱·설정·서명 유지. Android 설치 확인이 필요할 수 있습니다."
+    "md5": "e7ba97493e8409472d29d561be941c10",
+    "name": "OPCGPro_Mobile_REV71.apk",
+    "notes": "REV71: 상대 덱·뒷면의 예전 보라색 기본 이미지를 원피스 뒷면으로 수정. 기존 설치와 커스텀 뒷면 보존, 화면 회전 시 안전한 재로딩. REV70 게임 코어·덱·설정·서명 유지.",
+    "rev": 71,
+    "size": 107656203,
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r71/OPCGPro_Mobile_REV71.apk",
+    "sha256": "d49a46f60e2cc5ed2104ad85be15a25e018a23913d6387ae25f08434c072b41e"
   }
 ]
