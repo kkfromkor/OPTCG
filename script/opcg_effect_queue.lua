@@ -986,6 +986,8 @@ function Q.enqueue_direct(card, effect, context, options)
 		optional=options.optional == nil and Q.is_optional(effect) or options.optional,
 		description=options.description or 0,
 		timing=options.timing or context.timing,
+		before_resolve=options.before_resolve,
+		prevalidated=options.prevalidated == true,
 	}
 	Q._direct_items[#Q._direct_items + 1] = item
 	sync_queue_display()
@@ -1044,6 +1046,10 @@ function Q.enqueue_timing(cards, timing, context, options)
 							description=description_for(card, effect,
 								options.description_index or 0),
 							timing=timing,
+							-- Activation payment/validation belongs to this effect,
+							-- never to reactions picked up by the same drain.
+							before_resolve=options.before_resolve,
+							prevalidated=options.prevalidated == true,
 						}
 						Q._direct_items[#Q._direct_items + 1] = item
 						enqueued[#enqueued + 1] = item
@@ -1087,8 +1093,8 @@ local function resolve_direct_item(selected, options, context, resolved)
 	}
 	resolved[#resolved + 1] = record
 	if accepted then
-		if options.before_resolve
-			and options.before_resolve(player, selected, selected.context or context) == false then
+		if selected.before_resolve
+			and selected.before_resolve(player, selected, selected.context or context) == false then
 			accepted = false
 			record.accepted = false
 			record.reason = "ACTIVATION_ABORTED"
@@ -1097,7 +1103,7 @@ local function resolve_direct_item(selected, options, context, resolved)
 	if accepted then
 		local previous = Q._direct_active
 		Q._direct_active = selected
-		if options.prevalidated and opcg.runtime.resolve_prevalidated then
+		if selected.prevalidated and opcg.runtime.resolve_prevalidated then
 			record.ok, record.result = opcg.runtime.resolve_prevalidated(
 				selected.card, selected.effect.effect_id, selected.context)
 		else
