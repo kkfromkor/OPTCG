@@ -1667,6 +1667,26 @@ function C.ExecuteAction(op, action, context)
 	local player = context_player(action.player, context)
 	local chooser = controller(context)
 	local cards = {}
+	if op == "SET_ACTIVE" and action.schedule then
+		-- OP11-107 / P-058: select and activate at the scheduled boundary,
+		-- including cards that become rested after this effect resolves.
+		local scheduled, delayed_context = {}, {}
+		for key, value in pairs(action) do scheduled[key] = value end
+		for key, value in pairs(context) do delayed_context[key] = value end
+		scheduled.schedule = nil
+		local source = context.card
+		local self_target = action.selector and action.selector.kind == "SELF"
+		local field_id = self_target and source:GetFieldID() or nil
+		context.last_action_succeeded = assert(opcg.contract_ops.schedule(action.schedule, source, function()
+			-- "This Character" cannot refer to a new instance after leaving play.
+			-- Other selectors (including Events in the trash) resolve normally.
+			if self_target and (not source:IsLocation(LOCATION_MZONE + LOCATION_SZONE)
+				or source:GetFieldID() ~= field_id) then return end
+			C.ExecuteAction(op, scheduled, delayed_context)
+		end), "unsupported schedule")
+		context.last_action_effected = false
+		return {}
+	end
 	if op == "DRAW" then
 		local amount = choose_number_up_to(chooser, action.count or 1, action.mode)
 		context.last_action_succeeded = amount == 0 and action.mode == "UP_TO"
@@ -2265,7 +2285,7 @@ local function action_shape_supported(action, card)
 			and action.duration ~= "WHILE_CONDITION"
 		and action.duration ~= "RULE"
 		and not effect_reset(action.duration) then return false end
-	if (action.op == "TRASH" or action.op == "RETURN_TO_DECK_BOTTOM") and action.schedule
+	if (action.op == "TRASH" or action.op == "RETURN_TO_DECK_BOTTOM" or action.op == "SET_ACTIVE") and action.schedule
 		and action.schedule ~= "THIS_TURN_END" and action.schedule ~= "THIS_BATTLE_END" then return false end
 	if action.op == "PLAY_FROM_HAND" or action.op == "PLAY_FROM_TRASH"
 		or action.op == "PLAY_FROM_HAND_OR_TRASH" or action.op == "PLAY_FROM_DECK_TOP"

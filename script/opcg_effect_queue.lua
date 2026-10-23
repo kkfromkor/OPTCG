@@ -355,7 +355,7 @@ function Q.flush()
 	for _, item in ipairs(Q._items) do
 		if item.generation == generation and item.player == player and not item.raised then
 			-- 유예 아이템만 거른다: 일반 아이템의 조건은 처리 직후 판정(OP07-038
-			-- 재정)이라 여기서 미리 떨어뜨리면 안 된다 - 리졸버가 판정한다.
+			-- 재정)이라 여기서 미리 떨어뜨리면 안 된다 - 선택된 차례에 판정한다.
 			local ready = true
 			if item.defer_cost then
 				item.context.player = item.player
@@ -381,6 +381,18 @@ function Q.flush()
 	end
 	local selected = choose_next_item(player, bucket)
 	if selected then
+		-- Check at this item's activation opportunity, after its parent effect
+		-- and any earlier chosen siblings have resolved. A failed native target
+		-- makes no chain, so there may be no CHAIN_END to retire the item.
+		-- Consume it here: otherwise EB02-035's failed ON_PLAY can survive until
+		-- an unrelated later DON return makes its condition true.
+		selected.context.player = selected.player
+		selected.context.timing = selected.context.timing or selected.timing
+		if not opcg.runtime.can_resolve(selected.card, selected.effect.effect_id, selected.context) then
+			Q.take(selected.serial, selected.resolver)
+			Q._flushing = false
+			return Q.flush()
+		end
 		selected.raised = true
 		Q._inflight = selected.serial
 		if Duel and Duel.RaiseSingleEvent then
