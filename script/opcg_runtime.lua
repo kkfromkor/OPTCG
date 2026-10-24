@@ -38,13 +38,14 @@ local function effect_for_timing(effect, timing)
     return filtered
 end
 
-local function once_key(effect, context)
+local function once_key(card, effect, context)
     local turn_id = context.turn_id
     if turn_id == nil and Duel and Duel.GetTurnCount then turn_id = Duel.GetTurnCount() end
     return table.concat({
         tostring(effect.effect_id),
         tostring(context.player or "YOU"),
         tostring(turn_id or 0),
+        tostring(card.GetFieldID and card:GetFieldID() or 0),
     }, ":")
 end
 
@@ -89,7 +90,7 @@ end
 function runtime.once_used(card, effect, context)
     if not effect or not effect.once_per_turn then return false end
     local usage = runtime._once_usage[card]
-    return usage ~= nil and usage[once_key(effect, context or {})] == true
+    return usage ~= nil and usage[once_key(card, effect, context or {})] == true
 end
 
 -- These timings intentionally activate outside the field. Other automatic
@@ -105,16 +106,20 @@ function runtime.capture_trigger_source(card, context)
     context.trigger_source_field_id = card.GetFieldID and card:GetFieldID() or nil
 end
 
-function runtime.trigger_source_available(card, context)
-    if not context.timing or off_field_timings[context.timing] then return true end
+function runtime.same_field_instance(card, field_id)
     if card.IsLocation and not card:IsLocation(LOCATION_MZONE + LOCATION_SZONE) then
         return false
     end
-    if context.trigger_source_card == card and context.trigger_source_field_id ~= nil
-        and card.GetFieldID and card:GetFieldID() ~= context.trigger_source_field_id then
+    if field_id ~= nil and card.GetFieldID and card:GetFieldID() ~= field_id then
         return false
     end
     return true
+end
+
+function runtime.trigger_source_available(card, context)
+    if not context.timing or off_field_timings[context.timing] then return true end
+    local field_id = context.trigger_source_card == card and context.trigger_source_field_id or nil
+    return runtime.same_field_instance(card, field_id)
 end
 
 function runtime.can_resolve(card, effect_id, context, activation_by_effect)
@@ -156,7 +161,7 @@ function runtime.can_resolve(card, effect_id, context, activation_by_effect)
     end
     if effect.once_per_turn then
         local usage = runtime._once_usage[card]
-        if usage and usage[once_key(effect, context)] then return false, "ONCE_PER_TURN_USED" end
+        if usage and usage[once_key(card, effect, context)] then return false, "ONCE_PER_TURN_USED" end
     end
     -- 기동효과(context.ignition)의 "~인 경우"는 발동 잠금이 아니라 해결 시
     -- 판정(공식 재정: 조건 미충족이어도 코스트를 지불하고 발동할 수 있고,
@@ -175,13 +180,16 @@ end
 
 local function resolve_effect(card, effect, context)
     local adapter = runtime.adapter
+    -- Costs may move the source. Charge the activation's field instance,
+    -- so replaying that physical card gets a fresh once-per-turn allowance.
+    local activation_key = effect.once_per_turn and once_key(card, effect, context)
     local success, result = pcall(function()
         for _, cost in ipairs(effect.costs) do adapter:pay_cost(cost, context) end
         -- OPCG costs are paid before the effect resolves and are never rolled back merely
         -- because a later action can no longer change the state.
         if effect.once_per_turn then
             local usage = runtime._once_usage[card] or {}
-            usage[once_key(effect, context)] = true
+            usage[activation_key] = true
             runtime._once_usage[card] = usage
         end
         -- "~인 경우" 판정의 정위치 = 코스트 지불 후, 본문 해결 직전. 미충족이면

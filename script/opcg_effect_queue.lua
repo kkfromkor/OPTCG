@@ -160,13 +160,18 @@ end
 
 local sync_queue_display
 
-function Q.enqueue(card, effect, resolver, context, options)
-	options = options or {}
+local function capture_item_context(card, context, options)
 	context = shallow_copy(context)
 	if options.timing ~= nil then context.timing = options.timing end
 	if opcg.runtime and opcg.runtime.capture_trigger_source then
 		opcg.runtime.capture_trigger_source(card, context)
 	end
+	return context
+end
+
+function Q.enqueue(card, effect, resolver, context, options)
+	options = options or {}
+	context = capture_item_context(card, context, options)
 	Q._serial = Q._serial + 1
 	local generation
 	if Q._active_item then
@@ -969,11 +974,7 @@ end
 -- drain picks the item up at its 8-6 boundary.
 function Q.enqueue_direct(card, effect, context, options)
 	options = options or {}
-	context = shallow_copy(context)
-	if options.timing ~= nil then context.timing = options.timing end
-	if opcg.runtime and opcg.runtime.capture_trigger_source then
-		opcg.runtime.capture_trigger_source(card, context)
-	end
+	context = capture_item_context(card, context, options)
 	Q._direct_serial = Q._direct_serial + 1
 	local generation = Q._direct_active and (Q._direct_active.generation + 1) or 0
 	local item = {
@@ -1032,17 +1033,8 @@ function Q.enqueue_timing(cards, timing, context, options)
 								timing=timing,
 							})
 					elseif not options.engine or options.fallback_direct then
-						Q._direct_serial = Q._direct_serial + 1
-						local generation = Q._direct_active
-							and (Q._direct_active.generation + 1) or 0
-						local item = {
-							serial=Q._direct_serial,
-							card=card,
-							effect=effect,
-							player=item_context.player,
-							generation=generation,
-							context=item_context,
-							optional=Q.is_optional(effect),
+						enqueued[#enqueued + 1] = Q.enqueue_direct(card, effect, item_context, {
+							optional=options.optional,
 							description=description_for(card, effect,
 								options.description_index or 0),
 							timing=timing,
@@ -1050,9 +1042,7 @@ function Q.enqueue_timing(cards, timing, context, options)
 							-- never to reactions picked up by the same drain.
 							before_resolve=options.before_resolve,
 							prevalidated=options.prevalidated == true,
-						}
-						Q._direct_items[#Q._direct_items + 1] = item
-						enqueued[#enqueued + 1] = item
+						})
 					end
 				end
 			end

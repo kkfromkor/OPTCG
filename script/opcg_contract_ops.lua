@@ -425,16 +425,6 @@ local function rest_block_value(action, context)
 end
 
 local function execute_restriction(op, action, context)
-	if action.schedule then
-		-- OP15-025 크로: "이번 턴 종료 시, ..." - 제약 부여(대상 선택·필터 판정
-		-- 포함)를 경계 시점으로 미룬다. 그 시점의 레스트·부여둥 상태로 고른다.
-		local scheduled = {}
-		for key, value in pairs(action) do scheduled[key] = value end
-		scheduled.schedule = nil
-		assert(X.schedule(action.schedule, context.card,
-			function() execute_restriction(op, scheduled, context) end), "unsupported schedule")
-		return {}
-	end
 	if op == "CANNOT_BE_RESTED" then
 		-- 총합룰상 어택 선언(6-1-2)과 블로커 발동(6-3-2)은 그 카드를 "레스트로
 		-- 하는" 행위 자체 - 전면형은 레스트가 불가능하므로 어택 선언도 불가능
@@ -960,16 +950,8 @@ function X.execute(op, action, context)
 		end
 		return cards
 	elseif op == "RETURN_DON_TO_MATCH_OPPONENT" then
-		local effect = Effect.CreateEffect(context.card)
-		effect:SetType(EFFECT_TYPE_FIELD + EFFECT_TYPE_CONTINUOUS)
-		effect:SetCode(EVENT_PHASE + PHASE_END)
-		effect:SetCountLimit(1)
-		effect:SetOperation(function()
-			local difference = math.max(0, opcg.FieldDon(player) - opcg.FieldDon(other(player)))
-			if difference > 0 then opcg.ReturnDon(player, difference, player, nil, difference) end
-		end)
-		effect:SetReset(RESET_PHASE + PHASE_END)
-		Duel.RegisterEffect(effect, player)
+		local difference = math.max(0, opcg.FieldDon(player) - opcg.FieldDon(other(player)))
+		if difference > 0 then opcg.ReturnDon(player, difference, player, nil, difference) end
 		context.last_action_succeeded = true
 		return {}
 	elseif op == "CANNOT_DRAW" then
@@ -1902,22 +1884,37 @@ opcg.EmitPlayed = X.emit_played
 function X.on_character_played(card, player, context) return X.emit_played(card, player, context) end
 
 X._boundary_queue = X._boundary_queue or {}
-function X.schedule(schedule, source, operation)
+function X.schedule(schedule, source, operation, player)
 	assert(type(operation) == "function", "scheduled operation is required")
+	player = player == nil and source:GetControler() or player
 	if schedule == "THIS_BATTLE_END" then
 		local list = X._boundary_queue.END_OF_BATTLE or {}
 		list[#list + 1] = operation
 		X._boundary_queue.END_OF_BATTLE = list
 		return true
 	end
-	if schedule == "THIS_TURN_END" then
+	if schedule == "THIS_TURN_END" or schedule == "OPPONENT_NEXT_MAIN_PHASE_START" then
 		local effect = Effect.CreateEffect(source)
 		effect:SetType(EFFECT_TYPE_FIELD + EFFECT_TYPE_CONTINUOUS)
-		effect:SetCode(EVENT_PHASE + PHASE_END)
 		effect:SetCountLimit(1)
-		effect:SetOperation(operation)
-		effect:SetReset(RESET_PHASE + PHASE_END)
-		Duel.RegisterEffect(effect, source:GetControler())
+		if schedule == "THIS_TURN_END" then
+			effect:SetCode(EVENT_PHASE + PHASE_END)
+			effect:SetReset(RESET_PHASE + PHASE_END)
+		else
+			local created_turn = Duel.GetTurnCount()
+			effect:SetCode(EVENT_PHASE_START + PHASE_MAIN1)
+			effect:SetCondition(function()
+				return Duel.GetTurnPlayer() == other(player) and Duel.GetTurnCount() > created_turn
+			end)
+		end
+		local executed = false
+		effect:SetOperation(function(...)
+			if executed then return end
+			executed = true
+			effect:Reset()
+			operation(...)
+		end)
+		Duel.RegisterEffect(effect, player)
 		return true
 	end
 	return false

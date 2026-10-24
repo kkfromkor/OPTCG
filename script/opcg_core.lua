@@ -1660,6 +1660,60 @@ local function execute_nested(actions, context)
 	return out
 end
 
+-- Both validation and execution use this table: a recognized action must
+-- never silently discard its scheduled boundary and execute immediately.
+local SCHEDULE = {
+	TRASH={THIS_TURN_END=true, THIS_BATTLE_END=true},
+	RETURN_TO_DECK_BOTTOM={THIS_TURN_END=true, THIS_BATTLE_END=true},
+	RETURN_TO_HAND={THIS_TURN_END=true},
+	SET_ACTIVE={THIS_TURN_END=true, THIS_BATTLE_END=true},
+	ADD_DON={THIS_TURN_END=true},
+	SET_DON_ACTIVE={THIS_TURN_END=true},
+	REST_DON={OPPONENT_NEXT_MAIN_PHASE_START=true},
+	ADD_LIFE_FROM_DECK_TOP={THIS_TURN_END=true},
+	CANNOT_SET_ACTIVE={THIS_TURN_END=true},
+	RETURN_DON_TO_MATCH_OPPONENT={THIS_TURN_END=true},
+}
+local function schedule_supported(op, boundary)
+	return SCHEDULE[op] ~= nil and SCHEDULE[op][boundary] == true
+end
+local function schedule_action(op, action, context)
+	assert(schedule_supported(op, action.schedule), "unsupported schedule")
+	local scheduled, delayed = {}, {}
+	for key, value in pairs(action) do scheduled[key] = value end
+	for key, value in pairs(context) do delayed[key] = value end
+	scheduled.schedule = nil
+	delayed.player = controller(context)
+	local kind = action.selector and action.selector.kind
+	local references
+	if kind == "SELF" or kind == "LAST_TARGET" or kind == "EVENT_TARGET" then
+		-- These selectors refer to existing field instances, not a fresh
+		-- choice at the boundary. Snapshot the list as well as each identity.
+		references = {}
+		for _, card in ipairs(choose_selector(action.selector, delayed)) do
+			references[#references + 1] = {card=card, field_id=card:GetFieldID()}
+		end
+		scheduled.selector = {kind="LAST_TARGET"}
+	end
+	context.last_action_succeeded = assert(opcg.contract_ops.schedule(action.schedule, context.card, function()
+		if references then
+			local remaining = {}
+			for _, ref in ipairs(references) do
+				if opcg.runtime.same_field_instance(ref.card, ref.field_id) then
+					remaining[#remaining + 1] = ref.card
+				end
+			end
+			if #remaining == 0 then return end
+			remember_targets(delayed, remaining)
+		end
+		-- Unbound selectors choose from the state at the boundary (e.g. FILM).
+		delayed.turn_id = Duel.GetTurnCount()
+		C.ExecuteAction(op, scheduled, delayed)
+	end, delayed.player), "unsupported schedule")
+	context.last_action_effected = false
+	return {}
+end
+
 local count_source -- 정의는 per-count 절(아래) — 활성화 경로 분기가 참조한다
 function C.ExecuteAction(op, action, context)
 	context = context or {}
@@ -1667,26 +1721,7 @@ function C.ExecuteAction(op, action, context)
 	local player = context_player(action.player, context)
 	local chooser = controller(context)
 	local cards = {}
-	if op == "SET_ACTIVE" and action.schedule then
-		-- OP11-107 / P-058: select and activate at the scheduled boundary,
-		-- including cards that become rested after this effect resolves.
-		local scheduled, delayed_context = {}, {}
-		for key, value in pairs(action) do scheduled[key] = value end
-		for key, value in pairs(context) do delayed_context[key] = value end
-		scheduled.schedule = nil
-		local source = context.card
-		local self_target = action.selector and action.selector.kind == "SELF"
-		local field_id = self_target and source:GetFieldID() or nil
-		context.last_action_succeeded = assert(opcg.contract_ops.schedule(action.schedule, source, function()
-			-- "This Character" cannot refer to a new instance after leaving play.
-			-- Other selectors (including Events in the trash) resolve normally.
-			if self_target and (not source:IsLocation(LOCATION_MZONE + LOCATION_SZONE)
-				or source:GetFieldID() ~= field_id) then return end
-			C.ExecuteAction(op, scheduled, delayed_context)
-		end), "unsupported schedule")
-		context.last_action_effected = false
-		return {}
-	end
+	if action.schedule then return schedule_action(op, action, context) end
 	if op == "DRAW" then
 		local amount = choose_number_up_to(chooser, action.count or 1, action.mode)
 		context.last_action_succeeded = amount == 0 and action.mode == "UP_TO"
@@ -1808,12 +1843,7 @@ function C.ExecuteAction(op, action, context)
 		elseif op == "SET_ACTIVE" then for _, card in ipairs(cards) do opcg.SetActive(card, true) end
 		elseif op == "KO" then remove_cards(cards, REASON_EFFECT + REASON_DESTROY, "TRASH", context)
 		elseif op == "TRASH" then
-			if action.schedule then
-				assert(opcg.contract_ops.schedule(action.schedule, context.card,
-					function() remove_cards(cards, REASON_EFFECT, "TRASH", context) end), "unsupported schedule")
-			else
-				remove_cards(cards, REASON_EFFECT, "TRASH", context)
-			end
+			remove_cards(cards, REASON_EFFECT, "TRASH", context)
 		elseif op == "RETURN_TO_HAND" then remove_cards(cards, REASON_EFFECT, "HAND", context)
 		elseif op == "RETURN_TO_DECK_BOTTOM" then
 			local operation = function()
@@ -1834,9 +1864,7 @@ function C.ExecuteAction(op, action, context)
 					end
 				end
 			end
-			if action.schedule then
-				assert(opcg.contract_ops.schedule(action.schedule, context.card, operation), "unsupported schedule")
-			else operation() end
+			operation()
 		elseif op == "MODIFY_POWER" then
 			for _, card in ipairs(cards) do modify_power(context.card, card, action.amount, action.duration) end
 		elseif op == "MODIFY_COST" then
@@ -1898,22 +1926,11 @@ function C.ExecuteAction(op, action, context)
 		context.last_action_effected = moved > 0
 		return cards
 	elseif op == "SET_DON_ACTIVE" then
-		-- schedule 지원: "이번 턴 종료 시, 두웅!!을 …액티브로"(EB02-015 쿠로) -
-		-- 매수 선택·전환 모두 경계 시점에 실행(즉시 액티브는 그 턴에 쓸 수 있어
-		-- 룰상 이득 방향 오류였다)
-		local function set_don_active_now()
-			local maximum = action.mode == "UP_TO"
-				and math.min(action.count or 1, opcg.RestedDon(player)) or (action.count or 1)
-			local amount = choose_number_up_to(chooser, maximum, action.mode)
-			context.last_action_succeeded = amount == 0 and action.mode == "UP_TO"
-				or opcg.SetDonActive(player, amount, context) > 0
-		end
-		if action.schedule then
-			context.last_action_succeeded = assert(opcg.contract_ops.schedule(
-				action.schedule, context.card, set_don_active_now), "unsupported schedule")
-		else
-			set_don_active_now()
-		end
+		local maximum = action.mode == "UP_TO"
+			and math.min(action.count or 1, opcg.RestedDon(player)) or (action.count or 1)
+		local amount = choose_number_up_to(chooser, maximum, action.mode)
+		context.last_action_succeeded = amount == 0 and action.mode == "UP_TO"
+			or opcg.SetDonActive(player, amount, context) > 0
 		return {}
 	elseif op == "REST_DON" then
 		local maximum = action.mode == "UP_TO"
@@ -2077,15 +2094,7 @@ function C.ExecuteAction(op, action, context)
 		context.last_action_succeeded = count > 0
 		return {}
 	elseif op == "ADD_LIFE_FROM_DECK_TOP" then
-		if action.schedule then
-			local scheduled = {}
-			for key, value in pairs(action) do scheduled[key] = value end
-			scheduled.schedule = nil
-			context.last_action_succeeded = opcg.contract_ops.schedule(action.schedule, context.card,
-				function() add_life_from_deck(scheduled, context) end)
-		else
-			context.last_action_succeeded = add_life_from_deck(action, context)
-		end
+		context.last_action_succeeded = add_life_from_deck(action, context)
 		return {}
 	elseif op == "ADD_LIFE_FROM_HAND" then return add_life_from_hand(action, context)
 	elseif op == "ADD_LIFE_FROM_TRASH" then return add_life_from_hand(action, context, LOCATION_GRAVE)
@@ -2285,8 +2294,7 @@ local function action_shape_supported(action, card)
 			and action.duration ~= "WHILE_CONDITION"
 		and action.duration ~= "RULE"
 		and not effect_reset(action.duration) then return false end
-	if (action.op == "TRASH" or action.op == "RETURN_TO_DECK_BOTTOM" or action.op == "SET_ACTIVE") and action.schedule
-		and action.schedule ~= "THIS_TURN_END" and action.schedule ~= "THIS_BATTLE_END" then return false end
+	if action.schedule and not schedule_supported(action.op, action.schedule) then return false end
 	if action.op == "PLAY_FROM_HAND" or action.op == "PLAY_FROM_TRASH"
 		or action.op == "PLAY_FROM_HAND_OR_TRASH" or action.op == "PLAY_FROM_DECK_TOP"
 		or action.op == "PLAY_FROM_LIFE_TOP" then
