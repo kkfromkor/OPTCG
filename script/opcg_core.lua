@@ -1740,8 +1740,17 @@ function C.ExecuteAction(op, action, context)
 	elseif op == "TRASH_HAND" then
 		local minimum = action.mode == "UP_TO" and 0 or math.min(action.count or 1,
 			Duel.GetFieldGroupCount(player, LOCATION_HAND, 0))
-		cards = assert(select_zone(player, LOCATION_HAND, action.filter, minimum, action.count or 1,
-			action.chooser == "OPPONENT" and other(chooser) or player, context))
+		if action.random then
+			-- ST10-010: blind opponent-hand discard, sampled by the duel RNG.
+			-- Never ask the hand owner to choose or reveal the remaining hand.
+			local group = assert(zone_group(player, LOCATION_HAND, action.filter, context))
+			local amount = choose_number_up_to(chooser,
+				math.min(action.count or 1, group:GetCount()), action.mode)
+			for card in aux.Next(group:RandomSelect(chooser, amount)) do cards[#cards + 1] = card end
+		else
+			cards = assert(select_zone(player, LOCATION_HAND, action.filter, minimum, action.count or 1,
+				action.chooser == "OPPONENT" and other(chooser) or player, context))
+		end
 		remove_cards(cards, REASON_EFFECT + REASON_DISCARD, "TRASH")
 		-- "버려도 된다. 그렇게 했을 경우"(OP16-035) 게이트: 실제 버린 장수 기준.
 		-- 미설정 시 래퍼가 succeeded(=true)로 폴백해 UP_TO 0장 거절도 통과됐다.

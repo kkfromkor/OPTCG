@@ -12,6 +12,7 @@ function s.initial_effect(c)
             count=2,
             op=[[TRASH_HAND]],
             player=[[OPPONENT]],
+            random=true,
           },
         },
         conditions={
