@@ -19,6 +19,8 @@ function s.initial_effect(c)
             filter={},
             op=[[CANNOT_PLAY]],
             player=[[YOU]],
+            -- Official OP13 Q&A: effects may still play cards from hand.
+            reason=[[PLAY]],
             ["then"]=true,
             zone=[[HAND]],
           },

@@ -2501,6 +2501,10 @@ local function register_event_play(card, effect)
 	--native:SetCode(EVENT_FREE_CHAIN)
 	native:SetRange(LOCATION_HAND)
 	native:SetCondition(function(e, tp)
+		if opcg.contract_ops and opcg.contract_ops.player_has
+			and opcg.contract_ops.player_has(tp, opcg.EFFECT_CANNOT_PLAY, e:GetHandler(), nil, "PLAY") then
+			return false
+		end
 		-- [OPCG] 메인 창 판정. 하이브리드 코어의 t=9 어택은 배틀 기계를 메인
 		-- 안에서 돌리고, 배틀이 끝나도 페이즈를 MAIN1(4)로 되돌리지 않는다
 		-- (BATTLE_STEP=16 잔존, 턴 끝까지 - OP12-039 "어택 후 이벤트 전멸"

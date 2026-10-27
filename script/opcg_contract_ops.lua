@@ -311,8 +311,11 @@ function X.player_has(player, code, target, context, reason)
 	-- reason: 관문 식별자("PLAY"=기동 일반 등장 / "EFFECT"=효과 등장 관문).
 	-- reason=EFFECT 제약(OP12-036 조로류)이 일반 등장을 놓아주기 위해 값
 	-- 함수 4번째 인자로 흘린다. 무표시 호출은 nil로 전달된다.
-	if not Duel.IsPlayerAffectedByEffect then return false end
-	for _, effect in ipairs({Duel.IsPlayerAffectedByEffect(player, code)}) do
+	-- IsPlayerAffectedByEffect returns only the first native effect. Evaluate
+	-- every restriction so a nonmatching one cannot hide a later prohibition.
+	local get_effects = Duel.GetPlayerEffect or Duel.IsPlayerAffectedByEffect
+	if not get_effects then return false end
+	for _, effect in ipairs({get_effects(player, code)}) do
 		local value = opcg.GetEffectValue(effect)
 		if type(value) ~= "function" or value(effect, target, context, reason) then return true end
 	end
@@ -352,11 +355,14 @@ local function cannot_play_value(action, source, predicate)
 	-- 무표시 경로는 안전하게 차단 쪽으로 떨어진다.
 	local self_only = action.selector and action.selector.kind == "SELF"
 	local effect_only = action.reason == "EFFECT"
+	local normal_only = action.reason == "PLAY"
 	return function(_, target, _, play_reason)
 		if target == nil then return false end
 		if self_only and target ~= source then return false end
 		if not predicate(target) then return false end
 		if effect_only and play_reason == "PLAY" then return false end
+		-- OP13-028's special ruling only prohibits normal hand plays.
+		if normal_only and play_reason == "EFFECT" then return false end
 		return true
 	end
 end

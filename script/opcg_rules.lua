@@ -119,6 +119,10 @@ function R.register_stage_play(card)
 	local e = Effect.CreateEffect(card)
 	e:SetType(EFFECT_TYPE_ACTIVATE)
 	e:SetCode(EVENT_FREE_CHAIN)
+	e:SetCondition(function(ce, tp)
+		return not (opcg.contract_ops and opcg.contract_ops.player_has
+			and opcg.contract_ops.player_has(tp, opcg.EFFECT_CANNOT_PLAY, ce:GetHandler(), nil, "PLAY"))
+	end)
 	e:SetCost(function(ce, tp, eg, ep, ev, re, r, rp, chk)
 		local cost = opcg.GetCost(ce:GetHandler())
 		if chk == 0 then return opcg.CanRestDon(tp, cost) end
