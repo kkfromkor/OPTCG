@@ -1,11 +1,11 @@
 [
   {
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r72/OPCGPro_Mobile_REV72.apk",
-    "rev": 72,
-    "md5": "4ff489876dbd6305fbf518a2f0c59eba",
-    "sha256": "b3a0bb09a108dcdebfea2ce3c46bee40ffdefa65251805c8e3d6c39e8533259b",
-    "size": 107770891,
-    "name": "OPCGPro_Mobile_REV72.apk",
-    "notes": "REV72: Google·카카오 로그인, 계정 덱 자동 연동, 공식 서버 전적 연결. 기존 코어·서명 및 원피스 상대 카드 뒷면 유지."
+    "size": 107197451,
+    "sha256": "2d7db963e264f710cfe87113c1249b653d05b87c71c04d21428c94d55c1ca720",
+    "md5": "ebc3b9377416f0a50e858e92976e694c",
+    "name": "OPCGPro_Mobile_REV73.apk",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r73/OPCGPro_Mobile_REV73.apk",
+    "rev": 73,
+    "notes": "REV73: 필드 카드 1장 지정 효과에 대상 선택 후 완료 확인을 추가했습니다. 확정 전 대상 교체·선택 해제가 가능합니다. 기존 앱 서명과 코어를 유지합니다."
   }
 ]
