@@ -8,6 +8,7 @@ local STRING_DECK_TOP = 1241
 local STRING_DECK_BOTTOM = 1242
 
 local CONDITION = {
+	EVENT_TARGET_MATCHES=true,
 	YOUR_TURN=true, OPPONENT_TURN=true,
 	LIFE_LTE=true, LIFE_GTE=true, LIFE_EQ=true,
 	HAND_LTE=true, HAND_GTE=true, DECK_LTE=true, DECK_GTE=true, DECK_EQ=true,
@@ -60,6 +61,7 @@ local COST = {
 	TRASH_CHARACTER_OR_HAND=true, TRASH_FIELD_OR_HAND=true,
 }
 local ACTION = {
+	REPLACE_DAMAGE=true,
 	DRAW=true, TRASH_HAND=true, MODIFY_POWER=true, REST=true, SET_ACTIVE=true,
 	KO=true, TRASH=true, RETURN_TO_HAND=true, RETURN_TO_DECK_BOTTOM=true,
 	ADD_DON=true, GIVE_DON=true, SET_DON_ACTIVE=true, REST_DON=true,
@@ -483,6 +485,25 @@ function C.GetAttachedDon(card) return opcg.GetAttachedDon(card) end
 function C.CheckCondition(op, condition, context)
 	context = context or {}
 	local player = context_player(condition.player, context)
+	if op == "EVENT_TARGET_MATCHES" then
+		local target = context.event_target or context.ko_target
+		if not target then return false end
+		local snapshot = opcg._state_at_leave and opcg._state_at_leave[target]
+		local owner = snapshot and snapshot.owner
+			or (target.GetPreviousControler and target:GetPreviousControler() or target:GetControler())
+		if condition.owner == "YOU" and owner ~= player then return false end
+		if condition.owner == "OPPONENT" and owner == player then return false end
+		local filter = {}
+		for key, value in pairs(condition.filter or {}) do
+			if snapshot and key == "attribute" and value == "WISDOM" then
+				if not snapshot.wisdom then return false end
+			elseif snapshot and key == "not_keyword" and value == "BLOCKER" then
+				if snapshot.blocker then return false end
+			else filter[key] = value end
+		end
+		local predicate = filter_for(filter, context)
+		return predicate ~= nil and predicate(target)
+	end
 	local n = condition.count or 0
 	if op == "YOUR_TURN" then return Duel.GetTurnPlayer() == controller(context) end
 	if op == "OPPONENT_TURN" then return Duel.GetTurnPlayer() ~= controller(context) end

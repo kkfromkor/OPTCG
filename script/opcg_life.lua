@@ -130,6 +130,30 @@ function L.damage_leader(player, amount, context)
 		defeated=false,
 		blocked=false,
 	}
+	-- EB05-052: replace the damage event before checking a zero-life loss.
+	-- One Gloriosa prevents the complete event (including Double Attack).
+	if amount > 0 and not context.bridge and Duel.IsPlayerAffectedByEffect
+		and opcg.EFFECT_REPLACE_DAMAGE then
+		for _, effect in ipairs({Duel.IsPlayerAffectedByEffect(player, opcg.EFFECT_REPLACE_DAMAGE)}) do
+			local action = opcg.GetEffectValue(effect)
+			local source = type(action) == "table" and action._source_card
+			if source and opcg.IsOnField(source) then
+				local replacement = {card=source, player=player, damaged_player=player}
+				local payable = true
+				for _, cost in ipairs(action.replacement_costs or {}) do
+					if not OPCGCore.CanPayCost(cost.op, cost, replacement) then payable = false break end
+				end
+				if payable and Duel.SelectEffectYesNo(player, source) then
+					for _, cost in ipairs(action.replacement_costs or {}) do
+						OPCGCore.PayCost(cost.op, cost, replacement)
+					end
+					result.blocked = true
+					result.replaced = true
+					return result
+				end
+			end
+		end
+	end
 
 	-- [2026-08-09 유저 재정] 패배 판정은 '데미지 이벤트' 단위 — 이벤트 시작
 	-- 시점에 라이프가 0일 때만 패배(공식 룰). 더블어택 등 다중 데미지가 남은

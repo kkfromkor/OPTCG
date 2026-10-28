@@ -70,6 +70,7 @@ local known_keyword = {
 }
 
 local known_action = {
+    REPLACE_DAMAGE=true,
     DRAW=true,
     TRASH_HAND=true,
     PLAY_SELF=true,
@@ -193,6 +194,7 @@ local known_action = {
 }
 
 local known_condition = {
+    EVENT_TARGET_MATCHES=true,
     LIFE_LTE=true,
     LIFE_GTE=true,
     HAND_LTE=true,

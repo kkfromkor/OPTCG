@@ -769,6 +769,7 @@ local ENQUEUE_LIFE_CONDITIONS = { LIFE_EQ=true, LIFE_LTE=true, LIFE_GTE=true }
 -- true after pending effects resolve. Reject unrelated KOs before they occupy
 -- a once-per-turn slot (OP14-041, including invalid -> valid KOs in one batch).
 local ENQUEUE_KO_CONDITIONS = {
+	EVENT_TARGET_MATCHES=true,
 	EVENT_TARGET_TRAIT_CONTAINS=true, EVENT_TARGET_BASE_POWER_GTE=true,
 }
 local function enqueue_scope_allows(effect, card, timing, context)

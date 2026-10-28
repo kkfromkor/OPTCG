@@ -19,6 +19,7 @@ opcg.EFFECT_REPLACE_REST = opcg.EFFECT_REPLACE_REST or 0x7f4f121b
 opcg.EFFECT_REPLACE_LIFE_TO_HAND = opcg.EFFECT_REPLACE_LIFE_TO_HAND or 0x7f4f121c
 opcg.EFFECT_DON_PHASE_ATTACH = opcg.EFFECT_DON_PHASE_ATTACH or 0x7f4f121d
 opcg.EFFECT_MODIFY_HAND_COST = opcg.EFFECT_MODIFY_HAND_COST or 0x7f4f121e
+opcg.EFFECT_REPLACE_DAMAGE = opcg.EFFECT_REPLACE_DAMAGE or 0x7f4f121f
 
 local function other(player) return 1 - player end
 local function source_player(context)
@@ -1154,6 +1155,9 @@ function X.register_continuous(card, effect, action, condition)
 	action._source_card = card
 	action._effect_id = effect.effect_id
 	action._once_per_turn = effect.once_per_turn == true
+	if op == "REPLACE_DAMAGE" then
+		return continuous_player_effect(card, action, opcg.EFFECT_REPLACE_DAMAGE, action, condition)
+	end
 	if op == "CANNOT_BE_KO" then
 		local code, value = ko_protection(action, {card=card, player=card:GetControler()})
 		return continuous_card_effect(card, action, code, value, condition)

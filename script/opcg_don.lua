@@ -136,6 +136,15 @@ function opcg.RecordDonAtLeave(cards)
 	if cards ~= nil and type(cards) ~= "table" then cards = { cards } end
 	for _, card in ipairs(cards or {}) do
 		if card and card.IsLocation and card:IsLocation(LOCATION_MZONE) then
+			-- EB05-010 checks the victim's attributes/Blocker before leaving.
+			-- Granted keywords disappear in the graveyard, so reading them in
+			-- the subsequent KO queue would incorrectly trigger Robin.
+			opcg._state_at_leave = opcg._state_at_leave or setmetatable({}, {__mode="k"})
+			opcg._state_at_leave[card] = {
+				owner=card:GetControler(),
+				wisdom=opcg.HasAttribute and opcg.HasAttribute(card, "WISDOM") or false,
+				blocker=opcg.HasKeyword and opcg.HasKeyword(card, "BLOCKER") or false,
+			}
 			local group = overlay_group(card)
 			opcg._don_at_leave[card] = group and group:FilterCount(filter_don, nil) or 0
 		end

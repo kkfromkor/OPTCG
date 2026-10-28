@@ -660,6 +660,7 @@ local function scalar_filter(c, key, value, context)
 	if key == "base_power_gte" then return opcg.GetBasePower(c) >= value end
 	if key == "counter_eq" then return opcg.GetCounter(c) == value end
 	if key == "keyword" then return opcg.HasKeyword(c, value) end
+	if key == "not_keyword" then return not opcg.HasKeyword(c, value) end
 	if key == "character_cost_lte" then
 		return opcg.IsLeader(c) or (opcg.IsCharacter(c) and opcg.GetCost(c) <= value)
 	end
@@ -720,7 +721,7 @@ function opcg.CompileFilter(filter, context)
 		don_given=true, don_gte=true, cost_eq_attached_don=true,
 		power_lte=true, power_gte=true, base_power_eq=true, base_power_lte=true,
 		base_power_gte=true, counter_eq=true, vanilla=true, has_trigger=true,
-		keyword=true, character_cost_lte=true, power_sum_lte=true,
+		keyword=true, not_keyword=true, character_cost_lte=true, power_sum_lte=true,
 		exclude_self=true, cost_lte_life_total=true, cost_lte_life_of=true,
 		cost_sum_lte=true,
 		cost_lte_field_don_of=true, name_eq_last_target=true,
