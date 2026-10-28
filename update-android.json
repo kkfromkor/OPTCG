@@ -1,11 +1,11 @@
 [
   {
-    "size": 107197451,
-    "sha256": "2d7db963e264f710cfe87113c1249b653d05b87c71c04d21428c94d55c1ca720",
-    "md5": "ebc3b9377416f0a50e858e92976e694c",
-    "name": "OPCGPro_Mobile_REV73.apk",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r73/OPCGPro_Mobile_REV73.apk",
-    "rev": 73,
-    "notes": "REV73: 필드 카드 1장 지정 효과에 대상 선택 후 완료 확인을 추가했습니다. 확정 전 대상 교체·선택 해제가 가능합니다. 기존 앱 서명과 코어를 유지합니다."
+    "name": "OPCGPro_Mobile_REV74.apk",
+    "size": 107856907,
+    "sha256": "3417f913f1fe48212f940aaba1926ad9df8463b2d089b878a32d25468e365dcd",
+    "md5": "4ee3dd392afb4c9c35177393271d44ac",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r74/OPCGPro_Mobile_REV74.apk",
+    "rev": 74,
+    "notes": "REV74: 최근 추가한 필드 대상 확인 조작을 롤백하여 기존 선택 방식으로 복구했습니다. 샹크스·호킨스 수정과 EB05 카드 데이터는 유지합니다."
   }
 ]
