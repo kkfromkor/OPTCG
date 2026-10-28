@@ -1,11 +1,11 @@
 [
   {
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev71/OPCGPro-update-r71.zip",
-    "rev": 71,
-    "md5": "15437396fa8bac2d14e1edfd657dea17",
-    "sha256": "46c0d32077b973a9b5e636b01e94780c9ec15b8a18612da07cb48030c46f933e",
-    "size": 5695282,
-    "name": "OPCGPro-update-r71.zip",
-    "notes": "REV71: Google·카카오 로그인, 계정 덱 자동 연동, 공식 서버 전적 연결."
+    "name": "OPCGPro-update-r72.zip",
+    "size": 5584859,
+    "sha256": "30032fe084e029206529eaf2de626f314ea7cf5c57d273776799e4d4a8d63cb9",
+    "md5": "e3504ab119e8a3792354545029a04604",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev72/OPCGPro-update-r72.zip",
+    "rev": 72,
+    "notes": "REV72: 필드 카드 1장 지정 효과에 대상 선택 후 완료 확인을 추가했습니다. 확정 전 선택 교체·해제가 가능합니다."
   }
 ]
