@@ -1,11 +1,11 @@
 [
   {
-    "name": "OPCGPro-update-r73.zip",
-    "size": 5584791,
-    "sha256": "af73b4220c1d926e4b09663ee7ce9c346de69b598f0d1d2d66e2a5be2213bfbf",
-    "md5": "107a8b655081fd108bd0da0c5de57b65",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev73/OPCGPro-update-r73.zip",
-    "rev": 73,
-    "notes": "REV73: 최근 추가한 필드 대상 확인 조작을 롤백하여 기존 선택 방식으로 복구했습니다. 샹크스·호킨스 수정과 EB05 카드 데이터는 유지합니다."
+    "name": "OPCGPro-update-r74.zip",
+    "size": 6105441,
+    "sha256": "47dfa80d96bc3a654b2db6ea99e7f0a1150c86a31f6150c4fe2073956a24bb0a",
+    "md5": "fcdbf51d155ea4369a99fa9778937e37",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev74/OPCGPro-update-r74.zip",
+    "rev": 74,
+    "notes": "REV74: 무효과 캐릭터 8종 등록, P-037·P-094 레스트 조건, ST31-004 필드 집계, OP05-119 추가 턴을 수정했습니다."
   }
 ]

@@ -1,11 +1,11 @@
 [
   {
-    "name": "OPCGPro_Mobile_REV74.apk",
-    "size": 107856907,
-    "sha256": "3417f913f1fe48212f940aaba1926ad9df8463b2d089b878a32d25468e365dcd",
-    "md5": "4ee3dd392afb4c9c35177393271d44ac",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r74/OPCGPro_Mobile_REV74.apk",
-    "rev": 74,
-    "notes": "REV74: 최근 추가한 필드 대상 확인 조작을 롤백하여 기존 선택 방식으로 복구했습니다. 샹크스·호킨스 수정과 EB05 카드 데이터는 유지합니다."
+    "name": "OPCGPro_Mobile_REV75.apk",
+    "size": 118662155,
+    "sha256": "a937ee1531dfe44ee0d7693602d466f8303a7f225eb68131d1afdfc8de16ab7f",
+    "md5": "7f631a3d411ee8920c4b72f89a8f238b",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r75/OPCGPro_Mobile_REV75.apk",
+    "rev": 75,
+    "notes": "REV75: 무효과 캐릭터 8종 등록, P-037·P-094 레스트 조건, ST31-004 필드 집계, OP05-119 추가 턴을 수정했습니다."
   }
 ]
