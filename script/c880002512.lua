@@ -14,7 +14,7 @@ function s.initial_effect(c)
               count=1,
               filter={
                 cost_lte=2,
-                rested=true,
+                state=[[RESTED]],
               },
               kind=[[CHARACTER]],
               mode=[[UP_TO]],

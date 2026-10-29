@@ -24,7 +24,7 @@ function s.initial_effect(c)
           {
             count=2,
             filter={
-              rested=true,
+              state=[[RESTED]],
             },
             op=[[CHARACTER_COUNT_GTE]],
             player=[[YOU]],

@@ -61,7 +61,7 @@ local COST = {
 	TRASH_CHARACTER_OR_HAND=true, TRASH_FIELD_OR_HAND=true,
 }
 local ACTION = {
-	REPLACE_DAMAGE=true,
+	REPLACE_DAMAGE=true, GAIN_EXTRA_TURN=true,
 	DRAW=true, TRASH_HAND=true, MODIFY_POWER=true, REST=true, SET_ACTIVE=true,
 	KO=true, TRASH=true, RETURN_TO_HAND=true, RETURN_TO_DECK_BOTTOM=true,
 	ADD_DON=true, GIVE_DON=true, SET_DON_ACTIVE=true, REST_DON=true,
@@ -1696,6 +1696,9 @@ local SCHEDULE = {
 	RETURN_DON_TO_MATCH_OPPONENT={THIS_TURN_END=true},
 }
 local function schedule_supported(op, boundary)
+	if op == "GAIN_EXTRA_TURN" then
+		return boundary == "AFTER_CURRENT_TURN" and type(Duel.GainExtraTurn) == "function"
+	end
 	return SCHEDULE[op] ~= nil and SCHEDULE[op][boundary] == true
 end
 local function schedule_action(op, action, context)
@@ -1742,6 +1745,13 @@ function C.ExecuteAction(op, action, context)
 	local player = context_player(action.player, context)
 	local chooser = controller(context)
 	local cards = {}
+	-- Commit the extra turn during resolution. It survives its source leaving play;
+	-- the native turn processor inserts it after all current-turn end effects.
+	if op == "GAIN_EXTRA_TURN" then
+		assert(action.schedule == nil or schedule_supported(op, action.schedule), "unsupported schedule")
+		context.last_action_succeeded = assert(Duel.GainExtraTurn, "extra turns require an updated core")(player)
+		return {}
+	end
 	if action.schedule then return schedule_action(op, action, context) end
 	if op == "DRAW" then
 		local amount = choose_number_up_to(chooser, action.count or 1, action.mode)
@@ -2311,6 +2321,7 @@ local function cost_shape_supported(cost, card)
 end
 local function action_shape_supported(action, card)
 	if not ACTION[action.op] then return false end
+	if action.op == "GAIN_EXTRA_TURN" and type(Duel.GainExtraTurn) ~= "function" then return false end
 	if action.filter and not filter_for(action.filter, { card=card }) then return false end
 	if action.selector then
 		if action.selector.kind ~= "SELF" and action.selector.kind ~= "LAST_TARGET"
@@ -2384,7 +2395,7 @@ local function effect_is_continuous(effect)
 	end
 	return true
 end
-local PER_COUNT_SOURCE = { RESTED_DON=true, TRASH=true, HAND=true, CHARACTER=true }
+local PER_COUNT_SOURCE = { RESTED_DON=true, TRASH=true, HAND=true, CHARACTER=true, FIELD=true }
 local PER_COUNT_LOCATION = { TRASH=LOCATION_GRAVE, HAND=LOCATION_HAND }
 -- MODIFY_POWER_PER_COUNT는 활성화 경로 처리기 추가로 상주 전용 제한 해제
 local CONTINUOUS_ONLY = { MODIFY_COST_PER_COUNT=true }
@@ -2416,6 +2427,13 @@ count_source = function(action, player, card)
 		return Duel.GetMatchingGroupCount(function(c)
 			return opcg.IsCharacter(c) and predicate(c)
 		end, player, LOCATION_MZONE, 0, nil)
+	end
+	if action.source == "FIELD" then
+		local predicate = filter_for(action.filter, {card=card, player=player})
+		if not predicate then return nil end
+		return Duel.GetMatchingGroupCount(function(c)
+			return (opcg.IsLeader(c) or opcg.IsCharacter(c) or opcg.IsStage(c)) and predicate(c)
+		end, player, LOCATION_MZONE + LOCATION_FZONE, 0, nil)
 	end
 	local location = PER_COUNT_LOCATION[action.source]
 	if not location then return nil end
