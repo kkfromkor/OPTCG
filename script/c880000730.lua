@@ -1,4 +1,4 @@
--- AUTO-GENERATED: OP05-117 / 어퍼야드
+-- AUTO-GENERATED: OP05-117 / 어퍼 야드
 -- rules_id=OP05-117 script_id=880000730 fingerprint=713b85ae95005522b5f5ad1cbff8f3372438dec17c27297d1b5cfaa0350ca5a8
 local s,id=GetID()
 function s.initial_effect(c)

@@ -732,7 +732,7 @@ opcg.card_meta = {
 	[880000727]={name="신의 심판",base_card_no="OP05-114",card_type="EVENT",colors=32,traits={["하늘섬"]=true},attributes={}},
 	[880000728]={name="2억 볼트 뇌신",base_card_no="OP05-115",card_type="EVENT",colors=32,traits={["하늘섬"]=true},attributes={}},
 	[880000729]={name="3000만 볼트 뇌조",base_card_no="OP05-116",card_type="EVENT",colors=32,traits={["하늘섬"]=true},attributes={}},
-	[880000730]={name="어퍼야드",base_card_no="OP05-117",card_type="STAGE",colors=32,traits={["하늘섬"]=true},attributes={}},
+	[880000730]={name="어퍼 야드",base_card_no="OP05-117",card_type="STAGE",colors=32,traits={["하늘섬"]=true},attributes={}},
 	[880000731]={name="카이도",base_card_no="OP05-118",card_type="CHARACTER",colors=4,traits={["백수 해적단"]=true,["사황"]=true},attributes={["SPECIAL"]=true}},
 	[880000733]={name="몽키 D. 루피",base_card_no="OP05-119",card_type="CHARACTER",colors=8,traits={["밀짚모자 일당"]=true,["사황"]=true},attributes={["STRIKE"]=true}},
 	[880000734]={name="몽키 D. 루피",base_card_no="OP05-119",card_type="CHARACTER",colors=8,traits={["밀짚모자 일당"]=true,["사황"]=true},attributes={["STRIKE"]=true}},
