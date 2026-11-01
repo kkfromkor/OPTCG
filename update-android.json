@@ -1,11 +1,11 @@
 [
   {
-    "name": "OPCGPro_Mobile_REV75.apk",
+    "name": "OPCGPro_Mobile_REV76.apk",
     "size": 118662155,
-    "sha256": "a937ee1531dfe44ee0d7693602d466f8303a7f225eb68131d1afdfc8de16ab7f",
-    "md5": "7f631a3d411ee8920c4b72f89a8f238b",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r75/OPCGPro_Mobile_REV75.apk",
-    "rev": 75,
-    "notes": "REV75: 무효과 캐릭터 8종 등록, P-037·P-094 레스트 조건, ST31-004 필드 집계, OP05-119 추가 턴을 수정했습니다."
+    "sha256": "2b2b3de5534576cfec89e7833036347da8c71ef979b283f270c5d62b90aaf1bb",
+    "md5": "27de739a557bce2d63c3d79c5a1d736d",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/mobile-r76/OPCGPro_Mobile_REV76.apk",
+    "rev": 76,
+    "notes": "REV76: LAN+AI를 AI Battle로 교체했습니다. Green Mihawk OP14 서버 AI 대전과 설정 옆 ? 사용설명서를 추가했습니다. AI 대전에는 인터넷 연결이 필요합니다."
   }
 ]

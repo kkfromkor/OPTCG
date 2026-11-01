@@ -1,11 +1,11 @@
 [
   {
-    "name": "OPCGPro-update-r74.zip",
-    "size": 6105441,
-    "sha256": "47dfa80d96bc3a654b2db6ea99e7f0a1150c86a31f6150c4fe2073956a24bb0a",
-    "md5": "fcdbf51d155ea4369a99fa9778937e37",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev74/OPCGPro-update-r74.zip",
-    "rev": 74,
-    "notes": "REV74: 무효과 캐릭터 8종 등록, P-037·P-094 레스트 조건, ST31-004 필드 집계, OP05-119 추가 턴을 수정했습니다."
+    "name": "OPCGPro-update-r75.zip",
+    "size": 13886962,
+    "sha256": "35a5f62e880ce75d26fea7cafe207ccda43b759c1d4b33d23808b6d9c48a33a1",
+    "md5": "a3f5df293363da5fccb786cf43358edd",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev75/OPCGPro-update-r75.zip",
+    "rev": 75,
+    "notes": "REV75: LAN+AI를 AI Battle로 교체했습니다. Green Mihawk OP14 서버 AI 대전과 설정 옆 ? 사용설명서를 추가했습니다. AI 대전에는 인터넷 연결이 필요합니다."
   }
 ]
