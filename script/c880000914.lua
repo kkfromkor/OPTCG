@@ -1,4 +1,5 @@
--- AUTO-GENERATED: OP07-059 / 폭시
+-- OP07-059 / 폭시: separately choose up to one rested Leader and Character.
+-- Official ruling: https://en.onepiece-cardgame.com/pdf/qa_op07.pdf
 -- rules_id=OP07-059 script_id=880000914 fingerprint=29e9b610e843f76373b6b70241f8f6c3a116b72fd1dde759d894a31be8fc3e6e
 local s,id=GetID()
 function s.initial_effect(c)
@@ -9,13 +10,14 @@ function s.initial_effect(c)
       {
         actions={
           {
-            op=[[REST]],
+            duration=[[UNTIL_OPPONENT_NEXT_REFRESH]],
+            op=[[CANNOT_SET_ACTIVE]],
             selector={
               count=1,
               filter={
                 state=[[RESTED]],
               },
-              kind=[[LEADER_OR_CHARACTER]],
+              kind=[[LEADER]],
               mode=[[UP_TO]],
               owner=[[OPPONENT]],
             },
@@ -25,11 +27,13 @@ function s.initial_effect(c)
             op=[[CANNOT_SET_ACTIVE]],
             selector={
               count=1,
-              kind=[[LAST_TARGET]],
+              filter={
+                state=[[RESTED]],
+              },
+              kind=[[CHARACTER]],
               mode=[[UP_TO]],
-              owner=[[CONTEXT]],
+              owner=[[OPPONENT]],
             },
-            ["then"]=true,
           },
         },
         conditions={
