@@ -1,11 +1,11 @@
 [
   {
-    "name": "OPCGPro-update-r75.zip",
-    "size": 13886962,
-    "sha256": "35a5f62e880ce75d26fea7cafe207ccda43b759c1d4b33d23808b6d9c48a33a1",
-    "md5": "a3f5df293363da5fccb786cf43358edd",
-    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev75/OPCGPro-update-r75.zip",
-    "rev": 75,
-    "notes": "REV75: LAN+AI를 AI Battle로 교체했습니다. Green Mihawk OP14 서버 AI 대전과 설정 옆 ? 사용설명서를 추가했습니다. AI 대전에는 인터넷 연결이 필요합니다."
+    "name": "OPCGPro-update-r77.zip",
+    "size": 13897658,
+    "sha256": "e9302f1a6b318b5415878974a8ae01f6d34fff78f34518d386892cb5187af598",
+    "md5": "37fe2920072450b6c49702b6527e920a",
+    "url": "https://github.com/kkfromkor/OPTCG/releases/download/rev77/OPCGPro-update-r77.zip",
+    "rev": 77,
+    "notes": "REV77: 대전 중 서렌 아래 오류 제보 버튼을 추가했습니다. 현재 화면·대전 상황과 코멘트를 운영자에게 보낼 수 있습니다. 전송 실패 시 게임을 종료하지 않으면 작성 내용이 유지됩니다."
   }
 ]
