@@ -60,7 +60,7 @@ function s.initial_effect(c)
         costs={
           {
             count=2,
-            op=[[RETURN_ATTACHED_DON]],
+            op=[[RETURN_DON]],
           },
         },
         effect_id=[[E2]],

@@ -63,15 +63,15 @@ function s.initial_effect(c)
         conditions={},
         costs={
           {
-            max_count=2,
-            min_count=1,
+            count=2,
             op=[[RETURN_ATTACHED_DON]],
+            source=[[FIELD]],
             state=[[RESTED]],
           },
         },
         effect_id=[[E2]],
         once_per_turn=true,
-        source_text=[[【기동: 메인】【턴 1회】자신에게 부여된 두웅!!을 합계 2장까지 코스트 에리어에 레스트 상태로 되돌릴 수 있다: 이번 턴 동안, 이 캐릭터는 【속공】을 얻고, 파워 +1000.
+        source_text=[[【기동: 메인】【턴 1회】자신의 리더나 캐릭터에 부여된 두웅!!을 합계 2장 코스트 에리어에 레스트 상태로 되돌릴 수 있다: 이번 턴 동안, 이 캐릭터는 【속공】을 얻고, 파워 +1000.
 (이 카드는 등장한 턴에 어택할 수 있다)]],
         timings={
           [[ACTIVATE_MAIN]],

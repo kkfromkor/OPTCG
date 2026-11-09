@@ -198,7 +198,7 @@ function opcg.GetFieldDonGroup(player, state)
 	end, player, LOCATION_MZONE, 0, nil)
 	for host in aux.Next(cards) do
 		local attached = overlay_group(host)
-		if attached and state == nil then
+		if attached and (state == nil or state == "ATTACHED") then
 			for card in aux.Next(attached) do if is_don(card) then result:AddCard(card) end end
 		end
 	end
@@ -479,10 +479,10 @@ function opcg.RescueLooseDon(cards)
 	return moved
 end
 
-function opcg.ReturnAttachedDonToCost(card, minimum, maximum, chooser, state)
+function opcg.ReturnAttachedDonToCost(card, minimum, maximum, chooser, state, scope)
 	if not card then return 0 end
 	local destination = opcg.GetDonCostHost(card:GetControler())
-	local source = overlay_group(card)
+	local source = scope == "FIELD" and opcg.GetFieldDonGroup(card:GetControler(), "ATTACHED") or overlay_group(card)
 	if not destination or not source then return 0 end
 	local candidates = source:Filter(filter_don, nil)
 	local max_count = math.min(maximum or minimum or 0, candidates:GetCount())

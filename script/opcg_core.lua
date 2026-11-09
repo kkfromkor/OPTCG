@@ -99,6 +99,7 @@ local ACTION = {
 	MODIFY_HAND_COST=true, MODIFY_POWER_SPLIT=true, NEGATE_EFFECTS=true,
 	NEGATE_TIMING_EFFECTS=true, OPPONENT_CHOOSES=true,
 	PLAY_DISTINCT_FROM_TRASH=true, PLAY_FROM_DECK=true, DECK_BUILD_RESTRICTION=true,
+	ALLOW_UNLIMITED_DECK_COPIES=true,
 	PLAY_OWN_CHARACTERS_RESTED=true, PLAY_TWO_FROM_TRASH_SPLIT_STATE=true,
 	PREVENT_BLOCKER_ACTIVATION=true, REDRAW_HAND=true,
 	REORDER_ALL_LIFE_RETURN_ONE_TO_DECK=true, REPLACE_KO=true,
@@ -993,7 +994,9 @@ function C.CanPayCost(op, cost, context)
 		local available = count_zone(player, LOCATION_HAND, cost.filter, context)
 		return available ~= nil and available >= n
 	end
-	if op == "RETURN_ATTACHED_DON" then return opcg.GetAttachedDon(context.card) >= n end
+	if op == "RETURN_ATTACHED_DON" then
+		return (cost.source == "FIELD" and opcg.AttachedDonCount(player) or opcg.GetAttachedDon(context.card)) >= n
+	end
 	if op == "TAKE_LIFE_TO_HAND" or op == "TRASH_LIFE_TOP" then
 		return life_count(player) >= n
 	end
@@ -1146,7 +1149,7 @@ function C.PayCost(op, cost, context)
 		remove_cards_to_chosen_deck(cards, REASON_COST, cost, player, player)
 	elseif op == "RETURN_ATTACHED_DON" then
 		local maximum = cost.max_count or n
-		assert(opcg.ReturnAttachedDonToCost(context.card, n, maximum, player, cost.state) >= n,
+		assert(opcg.ReturnAttachedDonToCost(context.card, n, maximum, player, cost.state, cost.source) >= n,
 			"RETURN_ATTACHED_DON failed")
 	elseif op == "TAKE_LIFE_TO_HAND" or op == "TRASH_LIFE_TOP" then
 		for _ = 1, n do
@@ -1928,7 +1931,7 @@ function C.ExecuteAction(op, action, context)
 		-- LAST_ACTION_SUCCEEDED 조건(IF/CHOOSE)이 정확히 갈리게 한다.
 		-- ["then"] 종속은 succeeded 기준이라 종전 동작 불변.
 		context.last_action_effected = #cards > 0
-	elseif op == "DECK_BUILD_RESTRICTION" then
+	elseif op == "DECK_BUILD_RESTRICTION" or op == "ALLOW_UNLIMITED_DECK_COPIES" then
 		context.last_action_succeeded = true
 		return {}
 	elseif op == "ADD_DON" then
@@ -2305,6 +2308,8 @@ local function condition_shape_supported(condition, card)
 end
 local function cost_shape_supported(cost, card)
 	if not COST[cost.op] then return false end
+	if cost.op == "RETURN_ATTACHED_DON" and cost.source ~= nil
+		and cost.source ~= "SELF" and cost.source ~= "FIELD" then return false end
 	if cost.filter and not filter_for(cost.filter, { card=card }) then return false end
 	if cost.selector then
 		if cost.selector.kind ~= "SELF" and cost.selector.kind ~= "LAST_TARGET"
@@ -2478,6 +2483,12 @@ local function ko_immunity(action, card)
 	return nil, nil
 end
 local function effect_shape_supported(effect, card)
+	for _, action in ipairs(effect.actions or {}) do
+		if action.op == "ALLOW_UNLIMITED_DECK_COPIES" then
+			if #(effect.timings or {}) ~= 1 or effect.timings[1] ~= "RULE"
+				or #(effect.costs or {}) > 0 or #(effect.conditions or {}) > 0 then return false end
+		end
+	end
 	for _, condition in ipairs(effect.conditions or {}) do
 		if not condition_shape_supported(condition, card) then return false end
 	end
@@ -2626,7 +2637,7 @@ local function register_continuous(card, effect, your_turn, opponent_turn)
 		-- 등록 없이 통과. 종전엔 아래 fallback의 return false가 루프를 통째로
 		-- 끊어 P-117의 뒤따르는 WIN_GAME(덱 0장 대체 승리)까지 미등록됐다
 		-- (유저 제보 2026-07-27: 특수 승리 불발·덱아웃 시 상대 승리 판정).
-		local extended = action.op == "DECK_BUILD_RESTRICTION"
+		local extended = action.op == "DECK_BUILD_RESTRICTION" or action.op == "ALLOW_UNLIMITED_DECK_COPIES"
 			or (opcg.contract_ops and opcg.contract_ops.register_continuous
 			and opcg.contract_ops.register_continuous(card, effect, action, condition))
 		if not extended then

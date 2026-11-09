@@ -24,12 +24,16 @@ function s.initial_effect(c)
         conditions={},
         costs={
           {
+            count=3,
+            op=[[RETURN_DON]],
+          },
+          {
             count=1,
             op=[[RETURN_OWN_CARD_TO_DECK_BOTTOM]],
             order=[[CHOOSE]],
             selector={
               count=1,
-              filter={},
+              filter={power_gte=3000},
               kind=[[CHARACTER]],
               mode=[[EXACT]],
               owner=[[YOU]],
