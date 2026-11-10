@@ -231,13 +231,23 @@ local function event_counter_expectation(card, player, live)
 			end
 			return true
 		end
+		local function affects_battle_target(selector, context)
+			local target = context.battle_target
+			-- Outside battle retain the generic potential used by AI hand evaluation.
+			if not target then return true end
+			-- Use the same kind/owner/name/trait/stat predicate as actual resolution.
+			-- Do not select cards or consume costs while producing a preview.
+			local candidates = opcg.GetCandidateGroup(selector, context)
+			return candidates ~= nil and candidates:IsContains(target)
+		end
 		local function sum_actions(actions, context)
 			local sum = 0
 			for _, action in ipairs(actions or {}) do
 				if action.op == "MODIFY_POWER"
 					and type(action.amount) == "number" and action.amount > 0
 					and (not action.selector or action.selector.owner ~= "OPPONENT")
-					and conditions_pass(action.conditions, context) then
+					and conditions_pass(action.conditions, context)
+					and affects_battle_target(action.selector, context) then
 					sum = sum + action.amount
 				elseif action.op == "IF" and conditions_pass(action.conditions, context) then
 					sum = sum + sum_actions(action.actions, context)
